@@ -14,21 +14,23 @@ import jasper.wagner.smartstockmarketing.util.DateFormatter.getDate
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getHour
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getMinute
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getTime
+import jasper.wagner.smartstockmarketing.util.DateFormatter.length
 import kotlinx.coroutines.*
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.math.min
 
 
 class MainFragment : Fragment() {
 
-
     internal lateinit var client: OkHttpClient
     internal lateinit var request: Request
 
-
+    private var stockList = listOf<StockData>()
     private lateinit var binding: MainFragmentBinding
 
     private val parentJob = Job()
@@ -51,26 +53,13 @@ class MainFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-//        val view = inflater.inflate(R.layout.main_fragment, container, false)
-//        openTv = view.findViewById(R.id.open)
-//        closeTv = view.findViewById(R.id.close)
-//        highTv = view.findViewById(R.id.high)
-//        lowTv = view.findViewById(R.id.low)
-//        progressBar = view.findViewById(R.id.progress_bar)
-//        errorMessage = view.findViewById(R.id.error_message)
-
         binding = MainFragmentBinding.inflate(layoutInflater)
-
-
-
         return binding.root
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
-
-
     }
 
     override fun onResume() {
@@ -97,15 +86,12 @@ class MainFragment : Fragment() {
 
 
     private fun updateView(stockData: StockData) {
-//
-//
-//        errorMessage.setOnClickListener {
         binding.progressBar.visibility = View.GONE
         binding.open.text = "open: ${stockData.open}"
         binding.close.text = "close: ${stockData.close}"
         binding.high.text = "high: ${stockData.high}"
         binding.low.text = "low: ${stockData.low}"
-//        }
+        binding.volume.text = "volume: ${stockData.volume}"
     }
 
 
@@ -116,72 +102,103 @@ class MainFragment : Fragment() {
         outputSize: String
     ) = withContext(Dispatchers.IO) {
 
-            val url = Common.createApiLink(
-                function = function,
-                stockName = stockName,
-                interval = interval,
-                outputSize = outputSize
-            )
+        val url = Common.createApiLink(
+            function = function,
+            stockName = stockName,
+            interval = interval,
+            outputSize = outputSize
+        )
 
-            client = OkHttpClient()
-            request = Request.Builder()
-                .url(url)
-                .build()
+        client = OkHttpClient()
+        request = Request.Builder()
+            .url(url)
+            .build()
 
-            client.newCall(request)
-                .enqueue(object : Callback {
-                    override fun onFailure(call: Call, e: IOException) {
-                        Log.d("ERROR", e.toString())
-                    }
+        client.newCall(request)
+            .enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.d("ERROR", e.toString())
+                }
 
-                    override fun onResponse(call: Call, response: Response) {
-                        val body = response.body!!.string()
-                        val jsonResponse = JSONObject(body)
-                        Log.d("API body response", body)
+                override fun onResponse(call: Call, response: Response) {
+                    val body = response.body!!.string()
+                    val jsonResponse = JSONObject(body)
+                    Log.d("API body response", body)
 
-                        if (jsonResponse.has("Meta Data")) {
-                            val metaData = jsonResponse.getJSONObject("Meta Data")
+                    if (jsonResponse.has("Meta Data")) {
+                        val metaData = jsonResponse.getJSONObject("Meta Data")
 
-                            val lastRefreshed = metaData.get("3. Last Refreshed").toString()
-                            val timeInterval = metaData.get("4. Interval").toString()
+                        val lastRefreshed = metaData.get("3. Last Refreshed").toString()
+                        val timeInterval = metaData.get("4. Interval").toString()
 
+                        if (jsonResponse.has("Time Series ($timeInterval)")) {
+                            val data = jsonResponse.getJSONObject("Time Series ($timeInterval)")
                             val date = getDate(lastRefreshed)
                             val time = getTime(date, lastRefreshed)
-                            val hour = getHour(time)
-                            val minute = getMinute(time,timeInterval)
+                            var hour = getHour(time)
+                            var minute = getMinute(time, timeInterval)
                             Log.d("DATE", getDate(lastRefreshed))
-                            Log.d("TIME", getTime(date,lastRefreshed))
+                            Log.d("TIME", getTime(date, lastRefreshed))
 
-                            val formattedTimestamp = "$date$hour:$minute:00"
-                            Log.d("TIME_STAMP", formattedTimestamp)
+                            var timeStampAvailable = true
+                            while (timeStampAvailable) {
 
 
-                            if (jsonResponse.has("Time Series ($timeInterval)")) {
-                                val data = jsonResponse.getJSONObject("Time Series ($timeInterval)")
-                                val stockDataObject = data.getJSONObject(formattedTimestamp)
-                                val open = stockDataObject.getString("1. open").toDouble()
-                                val high = stockDataObject.getString("2. high").toDouble()
-                                val low = stockDataObject.getString("3. low").toDouble()
-                                val close = stockDataObject.getString("4. close").toDouble()
-                                val volume = stockDataObject.getString("5. volume").toDouble()
+                                val formattedTimestamp =
+                                    getFormattedTimeStamp(minute, hour, date)
+                                Log.d("TIME_STAMP", formattedTimestamp)
 
-                                val stockData = StockData(
-                                    open = open,
-                                    high = high,
-                                    low = low,
-                                    volume = volume,
-                                    close = close
-                                )
+                                timeStampAvailable = data.has(formattedTimestamp)
+                                if (timeStampAvailable) {
+                                    data.getJSONObject(formattedTimestamp).apply {
 
-                                scopeMainThread.launch {
-                                    updateView(stockData)
-                                    Log.d("OPEN", stockData.toString())
+                                        val stockData = StockData(
+                                            open = getString("1. open").toDouble(),
+                                            high = getString("2. high").toDouble(),
+                                            low = getString("3. low").toDouble(),
+                                            close = getString("4. close").toDouble(),
+                                            volume = getString("5. volume").toDouble()
+                                        )
+
+                                        stockList.plus(stockData)
+
+                                        scopeMainThread.launch {
+                                            updateView(stockData)
+                                            Log.d("OPEN", stockData.toString())
+                                        }
+                                    }
+                                    if (minute > 1) {
+                                        minute -= 1
+                                    } else {
+                                        minute = 0
+                                        hour -= 1
+                                    }
                                 }
+
                             }
                         }
                     }
-                })
+                }
+            })
+    }
+
+    private fun getFormattedTimeStamp(
+        minute: Int,
+        hour: Int,
+        date: String
+    ): String {
+        if (minute.length() == 1 && hour.length() == 1) {
+            return "$date 0$hour:0$minute:00"
+
+        } else if (minute.length() == 2 && hour.length() == 1) {
+            return "$date 0$hour:$minute:00"
+
+        } else if (minute.length() == 1 && hour.length() == 2) {
+            return "$date $hour:0$minute:00"
+        } else {
+            return "$date $hour:$minute:00"
         }
+    }
 
 
     fun getPrice(text: String): Float {

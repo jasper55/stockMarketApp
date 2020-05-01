@@ -12,19 +12,6 @@ import java.time.format.DateTimeFormatter
 
 object DateFormatter {
 
-//    @RequiresApi(Build.VERSION_CODES.O)
-//    fun getRoundedTime(interval: String, timeStamp: String) {
-//        val time = timeStamp.substringAfterLast("2020-04-30 ")
-//        val pattern = "yyyy-MM-dd HH:mm:ss"
-//        val simpleDateFormat = SimpleDateFormat(pattern)
-//        String date = simpleDateFormat. format (new Date ());
-//        System.out.println(date);
-//
-//        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
-//        val formatted = date.format(formatter)
-//        timeStamp.format(formatter)
-//    }
-
     fun getDate(timeStamp: String): String {
         return timeStamp.substringBefore(" ")
     }
@@ -33,23 +20,27 @@ object DateFormatter {
         return timeStamp.substringAfterLast(after)
     }
 
-    fun getHour(time: String): String {
-        return time.substringBefore(":")
+    fun getHour(time: String): Int {
+        var hour = time.substringBefore(":")
+        hour = hour.replace(" ", "")
+        if (hour.startsWith("0")) {
+            hour = hour.replace("0", "")
+        }
+        return hour.toInt()
     }
-    fun getMinute(time: String, interval: String): String {
+
+    fun getMinute(time: String, interval: String): Int {
         val sep = interval.substringBefore("min").toInt()
 
         val hour = time.substringBefore(":")
         val minSec = time.substringAfterLast("${hour}:")
 
-        val min = minSec.substringBefore(":").toInt()
+        var min = minSec.substringBefore(":")
 
-        val minute = (round((min / sep).toDouble()) * sep).toInt()
-        if (minute.length() == 1) {
-            return "0$minute"
-        } else {
-            return "$minute"
+        if (min.startsWith("0")) {
+            min = min.replace("0", "")
         }
+        return (round((min.toInt() / sep).toDouble()) * sep).toInt()
     }
 
     fun Int.length() = when (this) {
