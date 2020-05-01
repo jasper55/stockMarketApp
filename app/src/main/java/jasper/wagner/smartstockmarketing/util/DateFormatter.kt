@@ -3,6 +3,7 @@ package jasper.wagner.smartstockmarketing.util
 import android.os.Build
 import androidx.annotation.RequiresApi
 import jasper.wagner.cryptotracking.common.MathOperation.round
+import jasper.wagner.smartstockmarketing.util.DateFormatter.length
 import java.lang.Math.abs
 import java.lang.Math.log10
 import java.text.SimpleDateFormat
@@ -28,9 +29,16 @@ object DateFormatter {
         return timeStamp.substringBefore(" ")
     }
 
-    fun getTime(after: String, interval: String, timeStamp: String): String {
+    fun getTime(after: String, timeStamp: String): String {
+        return timeStamp.substringAfterLast(after)
+    }
+
+    fun getHour(time: String): String {
+        return time.substringBefore(":")
+    }
+    fun getMinute(time: String, interval: String): String {
         val sep = interval.substringBefore("min").toInt()
-        val time = timeStamp.substringAfterLast(after)
+
         val hour = time.substringBefore(":")
         val minSec = time.substringAfterLast("${hour}:")
 
@@ -38,9 +46,9 @@ object DateFormatter {
 
         val minute = (round((min / sep).toDouble()) * sep).toInt()
         if (minute.length() == 1) {
-            return "$hour:0$minute:00"
+            return "0$minute"
         } else {
-            return "$hour:$minute:00"
+            return "$minute"
         }
     }
 

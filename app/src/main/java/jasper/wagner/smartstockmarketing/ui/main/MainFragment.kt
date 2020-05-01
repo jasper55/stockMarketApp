@@ -7,15 +7,12 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
-import android.widget.TextView
-import com.google.gson.Gson
-import com.google.gson.annotations.SerializedName
 import jasper.wagner.cryptotracking.common.Common
-import jasper.wagner.smartstockmarketing.R
 import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
 import jasper.wagner.smartstockmarketing.model.StockData
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getDate
+import jasper.wagner.smartstockmarketing.util.DateFormatter.getHour
+import jasper.wagner.smartstockmarketing.util.DateFormatter.getMinute
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getTime
 import kotlinx.coroutines.*
 import okhttp3.*
@@ -117,8 +114,7 @@ class MainFragment : Fragment() {
         stockName: String,
         interval: String,
         outputSize: String
-    ) =
-        withContext(Dispatchers.IO) {
+    ) = withContext(Dispatchers.IO) {
 
             val url = Common.createApiLink(
                 function = function,
@@ -132,7 +128,6 @@ class MainFragment : Fragment() {
                 .url(url)
                 .build()
 
-
             client.newCall(request)
                 .enqueue(object : Callback {
                     override fun onFailure(call: Call, e: IOException) {
@@ -142,25 +137,27 @@ class MainFragment : Fragment() {
                     override fun onResponse(call: Call, response: Response) {
                         val body = response.body!!.string()
                         val jsonResponse = JSONObject(body)
-                        Log.d("Success", body)
+                        Log.d("API body response", body)
 
                         if (jsonResponse.has("Meta Data")) {
                             val metaData = jsonResponse.getJSONObject("Meta Data")
 
-                            val lastTimeStamp = metaData.get("3. Last Refreshed").toString()
+                            val lastRefreshed = metaData.get("3. Last Refreshed").toString()
                             val timeInterval = metaData.get("4. Interval").toString()
 
-                            Log.d("TIME_INTERVAL", timeInterval)
-                            Log.d("LAST UPDATE TIME", lastTimeStamp)
-                            val date = getDate(lastTimeStamp)
-                            val time = getTime(date, timeInterval, lastTimeStamp)
-                            Log.d("DATE", getDate(lastTimeStamp))
-                            Log.d("TIME", getTime(date, timeInterval, lastTimeStamp))
+                            val date = getDate(lastRefreshed)
+                            val time = getTime(date, lastRefreshed)
+                            val hour = getHour(time)
+                            val minute = getMinute(time,timeInterval)
+                            Log.d("DATE", getDate(lastRefreshed))
+                            Log.d("TIME", getTime(date,lastRefreshed))
 
-                            val formattedTimestamp = "$date$time"
+                            val formattedTimestamp = "$date$hour:$minute:00"
+                            Log.d("TIME_STAMP", formattedTimestamp)
 
-                            if (jsonResponse.has("Time Series (1min)")) {
-                                val data = jsonResponse.getJSONObject("Time Series (1min)")
+
+                            if (jsonResponse.has("Time Series ($timeInterval)")) {
+                                val data = jsonResponse.getJSONObject("Time Series ($timeInterval)")
                                 val stockDataObject = data.getJSONObject(formattedTimestamp)
                                 val open = stockDataObject.getString("1. open").toDouble()
                                 val high = stockDataObject.getString("2. high").toDouble()
