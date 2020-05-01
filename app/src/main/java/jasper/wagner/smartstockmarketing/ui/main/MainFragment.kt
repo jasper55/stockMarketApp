@@ -1,5 +1,6 @@
 package jasper.wagner.smartstockmarketing.ui.main
 
+import android.graphics.Color
 import androidx.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.util.Log
@@ -15,6 +16,8 @@ import jasper.wagner.smartstockmarketing.util.DateFormatter.getHour
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getMinute
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getTime
 import jasper.wagner.smartstockmarketing.util.DateFormatter.length
+import jasper.wagner.smartstockmarketing.util.MathOperation.round
+import kotlinx.android.synthetic.main.main_fragment.*
 import kotlinx.coroutines.*
 import okhttp3.*
 import org.json.JSONObject
@@ -22,7 +25,6 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.math.min
 
 
 class MainFragment : Fragment() {
@@ -30,7 +32,7 @@ class MainFragment : Fragment() {
     internal lateinit var client: OkHttpClient
     internal lateinit var request: Request
 
-    private var stockList = listOf<StockData>()
+    private var stockList = ArrayList<StockData>()
     private lateinit var binding: MainFragmentBinding
 
     private val parentJob = Job()
@@ -157,27 +159,44 @@ class MainFragment : Fragment() {
                                             close = getString("4. close").toDouble(),
                                             volume = getString("5. volume").toDouble()
                                         )
-
-                                        stockList.plus(stockData)
-
-                                        scopeMainThread.launch {
-                                            updateView(stockData)
-                                            Log.d("OPEN", stockData.toString())
-                                        }
+                                        stockList.add(stockData)
                                     }
+
                                     if (minute >= 1) {
                                         minute -= 1
                                     } else if (minute == 0)  {
                                         minute = 59
                                         hour -= 1
                                     }
+
                                 }
 
                             }
                         }
                     }
+                    scopeMainThread.launch {
+                        updateView(stockList.last())
+                        showDifferenceToOneHour(stockList)
+                    }
                 }
             })
+
+    }
+
+    private fun showDifferenceToOneHour(stockList: List<StockData>) {
+        val last = stockList.size - 1
+        var percentage: Double
+        if (last >= 59) {
+            percentage = ((stockList[last].close/stockList[last-60].close)*100)-100
+        } else {
+            percentage = ((stockList[last].close/stockList[0].close)*100)-100
+        }
+        percentage = round(percentage)
+        if (percentage >= 0 )
+            error_message.setTextColor(Color.GREEN)
+        else error_message.setTextColor(Color.RED)
+        error_message.text = "$percentage %"
+
     }
 
     private fun getFormattedTimeStamp(
