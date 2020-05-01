@@ -13,6 +13,7 @@ import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import jasper.wagner.cryptotracking.common.Common
 import jasper.wagner.smartstockmarketing.R
+import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
 import jasper.wagner.smartstockmarketing.model.StockData
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getDate
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getTime
@@ -30,19 +31,15 @@ class MainFragment : Fragment() {
     internal lateinit var client: OkHttpClient
     internal lateinit var request: Request
 
-    private lateinit var closeTv: TextView
-    private lateinit var openTv: TextView
-    private lateinit var highTv: TextView
-    private lateinit var lowTv: TextView
-    private lateinit var progressBar: ProgressBar
-    private lateinit var errorMessage: TextView
+
+    private lateinit var binding: MainFragmentBinding
 
     private val parentJob = Job()
     private val coroutineExceptionHandler: CoroutineExceptionHandler =
         CoroutineExceptionHandler { _, throwable ->
             coroutineScope.launch(Dispatchers.Main) {
-                errorMessage.visibility = View.VISIBLE
-                errorMessage.text = throwable.message
+                binding.errorMessage.visibility = View.VISIBLE
+                binding.errorMessage.text = throwable.message
             }
             GlobalScope.launch { println("Caught $throwable") }
         }
@@ -57,17 +54,19 @@ class MainFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val view = inflater.inflate(R.layout.main_fragment, container, false)
-        openTv = view.findViewById(R.id.open)
-        closeTv = view.findViewById(R.id.close)
-        highTv = view.findViewById(R.id.high)
-        lowTv = view.findViewById(R.id.low)
-        progressBar = view.findViewById(R.id.progress_bar)
-        errorMessage = view.findViewById(R.id.error_message)
+//        val view = inflater.inflate(R.layout.main_fragment, container, false)
+//        openTv = view.findViewById(R.id.open)
+//        closeTv = view.findViewById(R.id.close)
+//        highTv = view.findViewById(R.id.high)
+//        lowTv = view.findViewById(R.id.low)
+//        progressBar = view.findViewById(R.id.progress_bar)
+//        errorMessage = view.findViewById(R.id.error_message)
+
+        binding = MainFragmentBinding.inflate(layoutInflater)
 
 
 
-        return view
+        return binding.root
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -82,8 +81,8 @@ class MainFragment : Fragment() {
         val stockName = "IBM"
 
         coroutineScope.launch(Dispatchers.Main) {
-            progressBar.visibility = View.VISIBLE
-            errorMessage.visibility = View.VISIBLE
+            binding.progressBar.visibility = View.VISIBLE
+            binding.errorMessage.visibility = View.VISIBLE
 
             getLastStockData(
                 Common.Function.intraDay,
@@ -91,8 +90,6 @@ class MainFragment : Fragment() {
                 Common.Interval.min1,
                 Common.OutputSize.full
             )
-
-
         }
     }
 
@@ -106,11 +103,11 @@ class MainFragment : Fragment() {
 //
 //
 //        errorMessage.setOnClickListener {
-        progressBar.visibility = View.GONE
-        openTv.text = "open: ${stockData.open}"
-        closeTv.text = "close: ${stockData.close}"
-        highTv.text = "high: ${stockData.high}"
-        lowTv.text = "low: ${stockData.low}"
+        binding.progressBar.visibility = View.GONE
+        binding.open.text = "open: ${stockData.open}"
+        binding.close.text = "close: ${stockData.close}"
+        binding.high.text = "high: ${stockData.high}"
+        binding.low.text = "low: ${stockData.low}"
 //        }
     }
 
