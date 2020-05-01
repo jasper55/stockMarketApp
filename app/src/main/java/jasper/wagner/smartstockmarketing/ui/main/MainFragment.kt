@@ -17,6 +17,7 @@ import jasper.wagner.smartstockmarketing.util.DateFormatter.getMinute
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getTime
 import jasper.wagner.smartstockmarketing.util.DateFormatter.length
 import jasper.wagner.smartstockmarketing.util.MathOperation.round
+import jasper.wagner.smartstockmarketing.util.NotificationBuilder
 import kotlinx.android.synthetic.main.main_fragment.*
 import kotlinx.coroutines.*
 import okhttp3.*
@@ -25,6 +26,7 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.math.abs
 
 
 class MainFragment : Fragment() {
@@ -39,8 +41,8 @@ class MainFragment : Fragment() {
     private val coroutineExceptionHandler: CoroutineExceptionHandler =
         CoroutineExceptionHandler { _, throwable ->
             coroutineScope.launch(Dispatchers.Main) {
-                binding.errorMessage.visibility = View.VISIBLE
-                binding.errorMessage.text = throwable.message
+                binding.stockDevelopmentLastHour.visibility = View.VISIBLE
+                binding.stockDevelopmentLastHour.text = throwable.message
             }
             GlobalScope.launch { println("Caught $throwable") }
         }
@@ -70,7 +72,6 @@ class MainFragment : Fragment() {
 
         coroutineScope.launch(Dispatchers.Main) {
             binding.progressBar.visibility = View.VISIBLE
-            binding.errorMessage.visibility = View.VISIBLE
 
             getLastStockData(
                 Common.Function.intraDay,
@@ -153,6 +154,7 @@ class MainFragment : Fragment() {
                                     data.getJSONObject(formattedTimestamp).apply {
 
                                         val stockData = StockData(
+                                            stockName = stockName,
                                             open = getString("1. open").toDouble(),
                                             high = getString("2. high").toDouble(),
                                             low = getString("3. low").toDouble(),
@@ -175,28 +177,33 @@ class MainFragment : Fragment() {
                         }
                     }
                     scopeMainThread.launch {
-                        updateView(stockList.last())
+                        updateView(stockList[0])
                         showDifferenceToOneHour(stockList)
                     }
                 }
             })
-
     }
 
     private fun showDifferenceToOneHour(stockList: List<StockData>) {
-        val last = stockList.size - 1
-        var percentage: Double
-        if (last >= 59) {
-            percentage = ((stockList[last].close/stockList[last-60].close)*100)-100
+        val size = stockList.size
+        var stockGrowthRate: Double
+        if (size >= 59) {
+            stockGrowthRate = ((stockList[0].close/stockList[59].close)*100)-100
         } else {
-            percentage = ((stockList[last].close/stockList[0].close)*100)-100
+            stockGrowthRate = ((stockList[0].close/stockList[size-1].close)*100)-100
         }
-        percentage = round(percentage)
-        if (percentage >= 0 )
-            error_message.setTextColor(Color.GREEN)
-        else error_message.setTextColor(Color.RED)
-        error_message.text = "$percentage %"
+        stockGrowthRate = round(stockGrowthRate)
+        if (stockGrowthRate >= 0 )
+            stockDevelopmentLastHour.setTextColor(Color.GREEN)
+        else stockDevelopmentLastHour.setTextColor(Color.RED)
+        stockDevelopmentLastHour.text = "$stockGrowthRate %"
+        stockDevelopmentLastHour.visibility = View.VISIBLE
 
+        if (abs(stockGrowthRate) >= 0.01){
+            val notificationBuilder = NotificationBuilder()
+            notificationBuilder.createNotification(requireContext(),
+                stockList[0].stockName,stockGrowthRate)
+        }
     }
 
     private fun getFormattedTimeStamp(
@@ -204,34 +211,18 @@ class MainFragment : Fragment() {
         hour: Int,
         date: String
     ): String {
-        if (minute.length() == 1 && hour.length() == 1) {
-            return "$date 0$hour:0$minute:00"
+        return if (minute.length() == 1 && hour.length() == 1) {
+            "$date 0$hour:0$minute:00"
 
         } else if (minute.length() == 2 && hour.length() == 1) {
-            return "$date 0$hour:$minute:00"
+            "$date 0$hour:$minute:00"
 
         } else if (minute.length() == 1 && hour.length() == 2) {
-            return "$date $hour:0$minute:00"
+            "$date $hour:0$minute:00"
         } else {
-            return "$date $hour:$minute:00"
+            "$date $hour:$minute:00"
         }
     }
-
-
-    fun getPrice(text: String): Float {
-        if (text.trim().length == 0 || ("Invalid" in text)) return -1.0f
-        val message = text
-        val json = JSONObject(message)
-        val today = Date()
-        var DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd")
-        var dateKey = DATE_FORMAT.format(today) as String
-// get price from today
-        val todaysStockPrices =
-            ((json["Time Series (Daily)"] as JSONObject)[dateKey] as JSONObject)
-                .getString("4. close")
-        return todaysStockPrices.toFloat()
-    }
-
 
     companion object {
         fun newInstance() = MainFragment()
