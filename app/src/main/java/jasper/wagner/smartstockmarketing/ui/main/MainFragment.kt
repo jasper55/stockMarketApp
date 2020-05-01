@@ -143,9 +143,7 @@ class MainFragment : Fragment() {
                             var timeStampAvailable = true
                             while (timeStampAvailable) {
 
-
-                                val formattedTimestamp =
-                                    getFormattedTimeStamp(minute, hour, date)
+                                val formattedTimestamp = getFormattedTimeStamp(minute, hour, date)
                                 Log.d("TIME_STAMP", formattedTimestamp)
 
                                 timeStampAvailable = data.has(formattedTimestamp)
@@ -167,10 +165,10 @@ class MainFragment : Fragment() {
                                             Log.d("OPEN", stockData.toString())
                                         }
                                     }
-                                    if (minute > 1) {
+                                    if (minute >= 1) {
                                         minute -= 1
-                                    } else {
-                                        minute = 0
+                                    } else if (minute == 0)  {
+                                        minute = 59
                                         hour -= 1
                                     }
                                 }
