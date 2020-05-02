@@ -1,13 +1,13 @@
 package jasper.wagner.smartstockmarketing.ui.main
 
 import android.graphics.Color
-import androidx.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProviders
 import jasper.wagner.cryptotracking.common.Common
 import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
 import jasper.wagner.smartstockmarketing.model.StockData
@@ -20,12 +20,10 @@ import jasper.wagner.smartstockmarketing.util.MathOperation.round
 import jasper.wagner.smartstockmarketing.util.NotificationBuilder
 import kotlinx.android.synthetic.main.main_fragment.*
 import kotlinx.coroutines.*
+import lecho.lib.hellocharts.model.*
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.math.abs
 
 
@@ -41,8 +39,8 @@ class MainFragment : Fragment() {
     private val coroutineExceptionHandler: CoroutineExceptionHandler =
         CoroutineExceptionHandler { _, throwable ->
             coroutineScope.launch(Dispatchers.Main) {
-                binding.stockDevelopmentLastHour.visibility = View.VISIBLE
-                binding.stockDevelopmentLastHour.text = throwable.message
+//                binding.stockDevelopmentLastHour.visibility = View.VISIBLE
+//                binding.stockDevelopmentLastHour.text = throwable.message
             }
             GlobalScope.launch { println("Caught $throwable") }
         }
@@ -90,6 +88,7 @@ class MainFragment : Fragment() {
 
     private fun updateView(stockData: StockData) {
         binding.progressBar.visibility = View.GONE
+        binding.stockName.text = "${stockData.stockName}"
         binding.open.text = "open: ${stockData.open}"
         binding.close.text = "close: ${stockData.close}"
         binding.high.text = "high: ${stockData.high}"
@@ -105,6 +104,7 @@ class MainFragment : Fragment() {
         outputSize: String
     ) = withContext(Dispatchers.IO) {
 
+        stockList.clear()
         val url = Common.createApiLink(
             function = function,
             stockName = stockName,
@@ -153,56 +153,66 @@ class MainFragment : Fragment() {
                                 if (timeStampAvailable) {
                                     data.getJSONObject(formattedTimestamp).apply {
 
+                                        var min = ""
+                                        min = if (minute == 0) {
+                                            "00"
+                                        } else {
+                                            minute.toString()
+                                        }
+
                                         val stockData = StockData(
                                             stockName = stockName,
+                                            time = "$hour:$min",
                                             open = getString("1. open").toDouble(),
                                             high = getString("2. high").toDouble(),
                                             low = getString("3. low").toDouble(),
                                             close = getString("4. close").toDouble(),
                                             volume = getString("5. volume").toDouble()
                                         )
+
                                         stockList.add(stockData)
                                     }
 
                                     if (minute >= 1) {
                                         minute -= 1
-                                    } else if (minute == 0)  {
+                                    } else if (minute == 0) {
                                         minute = 59
                                         hour -= 1
                                     }
-
                                 }
-
                             }
                         }
                     }
                     scopeMainThread.launch {
+                        showLineChart()
                         updateView(stockList[0])
-                        showDifferenceToOneHour(stockList)
+                        showDifferenceToOneHour()
                     }
                 }
             })
     }
 
-    private fun showDifferenceToOneHour(stockList: List<StockData>) {
+    private fun showDifferenceToOneHour() {
         val size = stockList.size
         var stockGrowthRate: Double
         if (size >= 59) {
-            stockGrowthRate = ((stockList[0].close/stockList[59].close)*100)-100
+            stockGrowthRate = ((stockList[0].close / stockList[59].close) * 100) - 100
         } else {
-            stockGrowthRate = ((stockList[0].close/stockList[size-1].close)*100)-100
+            stockGrowthRate = ((stockList[0].close / stockList[size - 1].close) * 100) - 100
         }
         stockGrowthRate = round(stockGrowthRate)
-        if (stockGrowthRate >= 0 )
-            stockDevelopmentLastHour.setTextColor(Color.GREEN)
-        else stockDevelopmentLastHour.setTextColor(Color.RED)
-        stockDevelopmentLastHour.text = "$stockGrowthRate %"
-        stockDevelopmentLastHour.visibility = View.VISIBLE
+        if (stockGrowthRate >= 0)
+            stock_development_last_hour.setTextColor(Color.GREEN)
+        else stock_development_last_hour.setTextColor(Color.RED)
+        stock_development_last_hour.text = "growth rate: $stockGrowthRate %"
+        stock_development_last_hour.visibility = View.VISIBLE
 
-        if (abs(stockGrowthRate) >= 0.01){
+        if (abs(stockGrowthRate) >= 0.01) {
             val notificationBuilder = NotificationBuilder()
-            notificationBuilder.createNotification(requireContext(),
-                stockList[0].stockName,stockGrowthRate)
+            notificationBuilder.createNotification(
+                requireContext(),
+                stockList[0].stockName, stockGrowthRate
+            )
         }
     }
 
@@ -222,6 +232,57 @@ class MainFragment : Fragment() {
         } else {
             "$date $hour:$minute:00"
         }
+    }
+
+    private fun showLineChart() {
+        val yAxisValues = ArrayList<PointValue>()
+        val axisValues = ArrayList<AxisValue>()
+
+        val axisData = arrayOf(
+            "Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec"
+        )
+
+        val yAxisData = intArrayOf(50, 20, 15, 30, 20, 60, 15, 40, 45, 10, 90, 18)
+
+        val line = Line(yAxisValues).setColor(Color.parseColor("#9C27B0"))
+        line.pointRadius = 0
+        line.strokeWidth = 2
+        val size = stockList.size
+
+        Log.d("SIZE", size.toString())
+        val list = stockList.reversed()
+
+        var i = 0
+        while (i < size) {
+            axisValues.add(i, AxisValue(i.toFloat()).setLabel(list[i].time))
+            yAxisValues.add(i, PointValue(i.toFloat(), (list[i].close).toFloat()))
+            i += 1
+        }
+
+        val lines = ArrayList<Line>()
+        lines.add(line)
+
+        val axis = Axis()
+        val yAxis = Axis()
+        axis.values = axisValues
+        axis.textSize = 12
+        axis.textColor = Color.parseColor("#03A9F4")
+        yAxis.textColor = Color.parseColor("#03A9F4")
+        yAxis.textSize = 12
+
+        val data = LineChartData()
+        data.lines = lines
+
+        data.axisXBottom = axis
+        data.axisYLeft = yAxis
+
+        line_chart.lineChartData = data
+//        val viewport = Viewport(line_chart.maximumViewport)
+//        viewport.top = 110f
+//        line_chart.maximumViewport = viewport
+//        line_chart.currentViewport = viewport
+
+        line_chart.visibility = View.VISIBLE
     }
 
     companion object {

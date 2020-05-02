@@ -39,6 +39,9 @@ object DateFormatter {
 
         if (min.startsWith("0")) {
             min = min.replace("0", "")
+            if (min == "") {
+                min = "0"
+            }
         }
         return (round((min.toInt() / sep).toDouble()) * sep).toInt()
     }
