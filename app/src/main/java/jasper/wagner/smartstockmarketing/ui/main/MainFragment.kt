@@ -8,6 +8,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import androidx.work.Data
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
 import jasper.wagner.cryptotracking.common.Common
 import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
 import jasper.wagner.smartstockmarketing.model.StockData
@@ -18,13 +22,18 @@ import jasper.wagner.smartstockmarketing.util.DateFormatter.getTime
 import jasper.wagner.smartstockmarketing.util.DateFormatter.length
 import jasper.wagner.smartstockmarketing.util.MathOperation.round
 import jasper.wagner.smartstockmarketing.util.NotificationBuilder
+import jasper.wagner.smartstockmarketing.util.NotifyWorker
+import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.CRITICAL_GROWTH_RATE
+import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.STOCK_GROWTH_RATE
+import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.STOCK_NAME
+import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.PERIODIC_WORK_TAG
 import kotlinx.android.synthetic.main.main_fragment.*
 import kotlinx.coroutines.*
 import lecho.lib.hellocharts.model.*
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
-import kotlin.math.abs
+import java.util.concurrent.TimeUnit
 
 
 class MainFragment : Fragment() {
@@ -39,8 +48,8 @@ class MainFragment : Fragment() {
     private val coroutineExceptionHandler: CoroutineExceptionHandler =
         CoroutineExceptionHandler { _, throwable ->
             coroutineScope.launch(Dispatchers.Main) {
-//                binding.stockDevelopmentLastHour.visibility = View.VISIBLE
-//                binding.stockDevelopmentLastHour.text = throwable.message
+//                binding.errorContainer.visibility = View.VISIBLE
+//                binding.errorContainer.text = throwable.message
             }
             GlobalScope.launch { println("Caught $throwable") }
         }
@@ -51,10 +60,7 @@ class MainFragment : Fragment() {
 
     private lateinit var viewModel: MainViewModel
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = MainFragmentBinding.inflate(layoutInflater)
         return binding.root
     }
@@ -75,7 +81,7 @@ class MainFragment : Fragment() {
                 Common.Function.intraDay,
                 stockName,
                 Common.Interval.min1,
-                Common.OutputSize.full
+                Common.OutputSize.compact
             )
         }
     }
@@ -207,13 +213,7 @@ class MainFragment : Fragment() {
         stock_development_last_hour.text = "growth rate: $stockGrowthRate %"
         stock_development_last_hour.visibility = View.VISIBLE
 
-        if (abs(stockGrowthRate) >= 0.01) {
-            val notificationBuilder = NotificationBuilder()
-            notificationBuilder.createNotification(
-                requireContext(),
-                stockList[0].stockName, stockGrowthRate
-            )
-        }
+        schedulePeriodicChartAnalyze(stockGrowthRate)
     }
 
     private fun getFormattedTimeStamp(
@@ -238,18 +238,14 @@ class MainFragment : Fragment() {
         val yAxisValues = ArrayList<PointValue>()
         val axisValues = ArrayList<AxisValue>()
 
-        val axisData = arrayOf(
-            "Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec"
-        )
-
-        val yAxisData = intArrayOf(50, 20, 15, 30, 20, 60, 15, 40, 45, 10, 90, 18)
-
         val line = Line(yAxisValues).setColor(Color.parseColor("#9C27B0"))
         line.pointRadius = 0
         line.strokeWidth = 2
-        val size = stockList.size
 
-        Log.d("SIZE", size.toString())
+        val lines = ArrayList<Line>()
+        lines.add(line)
+
+        val size = stockList.size
         val list = stockList.reversed()
 
         var i = 0
@@ -258,9 +254,6 @@ class MainFragment : Fragment() {
             yAxisValues.add(i, PointValue(i.toFloat(), (list[i].close).toFloat()))
             i += 1
         }
-
-        val lines = ArrayList<Line>()
-        lines.add(line)
 
         val axis = Axis()
         val yAxis = Axis()
@@ -283,6 +276,25 @@ class MainFragment : Fragment() {
 //        line_chart.currentViewport = viewport
 
         line_chart.visibility = View.VISIBLE
+    }
+
+    private fun schedulePeriodicChartAnalyze(stockGrowthRate: Double){
+        val data = Data.Builder()
+            .putString(STOCK_NAME,stockList[0].stockName)
+            .putDouble(STOCK_GROWTH_RATE,stockGrowthRate)
+            .putDouble(CRITICAL_GROWTH_RATE,0.01)
+
+        val periodicWorkRequest = PeriodicWorkRequest.Builder(NotifyWorker::class.java,1,TimeUnit.MINUTES)
+            .addTag(PERIODIC_WORK_TAG)
+            .setInputData(data.build())
+            .build()
+
+        WorkManager.getInstance(requireContext())
+            .enqueueUniquePeriodicWork(
+            PERIODIC_WORK_TAG,
+            ExistingPeriodicWorkPolicy.REPLACE,
+            periodicWorkRequest
+        )
     }
 
     companion object {
