@@ -6,33 +6,33 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
-import androidx.work.Data
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequest
-import androidx.work.WorkManager
+import androidx.work.*
+import com.google.common.util.concurrent.ListenableFuture
 import jasper.wagner.cryptotracking.common.Common
 import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
-import jasper.wagner.smartstockmarketing.model.StockData
+import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
+import jasper.wagner.smartstockmarketing.domain.model.StockData
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getDate
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getHour
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getMinute
 import jasper.wagner.smartstockmarketing.util.DateFormatter.getTime
 import jasper.wagner.smartstockmarketing.util.DateFormatter.length
-import jasper.wagner.smartstockmarketing.util.MathOperation.round
-import jasper.wagner.smartstockmarketing.util.NotificationBuilder
 import jasper.wagner.smartstockmarketing.util.NotifyWorker
-import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.CRITICAL_GROWTH_RATE
-import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.STOCK_GROWTH_RATE
-import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.STOCK_NAME
+import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.API_CALL_PARAMS
 import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.PERIODIC_WORK_TAG
+import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.STOCK_GROWTH_RATE
+import jasper.wagner.smartstockmarketing.util.SerializeHelper
 import kotlinx.android.synthetic.main.main_fragment.*
 import kotlinx.coroutines.*
 import lecho.lib.hellocharts.model.*
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 
 
@@ -41,7 +41,7 @@ class MainFragment : Fragment() {
     internal lateinit var client: OkHttpClient
     internal lateinit var request: Request
 
-    private var stockList = ArrayList<StockData>()
+    //    private var stockList = ArrayList<StockData>()
     private lateinit var binding: MainFragmentBinding
 
     private val parentJob = Job()
@@ -60,7 +60,11 @@ class MainFragment : Fragment() {
 
     private lateinit var viewModel: MainViewModel
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         binding = MainFragmentBinding.inflate(layoutInflater)
         return binding.root
     }
@@ -77,12 +81,25 @@ class MainFragment : Fragment() {
         coroutineScope.launch(Dispatchers.Main) {
             binding.progressBar.visibility = View.VISIBLE
 
-            getLastStockData(
-                Common.Function.intraDay,
+            val apiParams = StockApiCallParams(
                 stockName,
+                Common.Function.intraDay,
                 Common.Interval.min1,
                 Common.OutputSize.compact
             )
+
+            schedulePeriodicChartAnalyze(apiParams)
+//            scopeMainThread.launch {
+//                showLineChart(stockList)
+//                updateView(stockList[0])
+//                showDifferenceToOneHour(stockList)
+//            }
+//            getLastStockData(
+//                Common.Function.intraDay,
+//                stockName,
+//                Common.Interval.min1,
+//                Common.OutputSize.compact
+//            )
         }
     }
 
@@ -110,7 +127,7 @@ class MainFragment : Fragment() {
         outputSize: String
     ) = withContext(Dispatchers.IO) {
 
-        stockList.clear()
+//        stockList.clear()
         val url = Common.createApiLink(
             function = function,
             stockName = stockName,
@@ -176,7 +193,7 @@ class MainFragment : Fragment() {
                                             volume = getString("5. volume").toDouble()
                                         )
 
-                                        stockList.add(stockData)
+//                                        stockList.add(stockData)
                                     }
 
                                     if (minute >= 1) {
@@ -190,30 +207,20 @@ class MainFragment : Fragment() {
                         }
                     }
                     scopeMainThread.launch {
-                        showLineChart()
-                        updateView(stockList[0])
-                        showDifferenceToOneHour()
+//                        showLineChart()
+//                        updateView(stockList[0])
+//                        showDifferenceToOneHour()
                     }
                 }
             })
     }
 
-    private fun showDifferenceToOneHour() {
-        val size = stockList.size
-        var stockGrowthRate: Double
-        if (size >= 59) {
-            stockGrowthRate = ((stockList[0].close / stockList[59].close) * 100) - 100
-        } else {
-            stockGrowthRate = ((stockList[0].close / stockList[size - 1].close) * 100) - 100
-        }
-        stockGrowthRate = round(stockGrowthRate)
+    private fun showDifferenceToOneHour(stockGrowthRate: Double) {
         if (stockGrowthRate >= 0)
             stock_development_last_hour.setTextColor(Color.GREEN)
         else stock_development_last_hour.setTextColor(Color.RED)
         stock_development_last_hour.text = "growth rate: $stockGrowthRate %"
         stock_development_last_hour.visibility = View.VISIBLE
-
-        schedulePeriodicChartAnalyze(stockGrowthRate)
     }
 
     private fun getFormattedTimeStamp(
@@ -234,7 +241,7 @@ class MainFragment : Fragment() {
         }
     }
 
-    private fun showLineChart() {
+    private fun showLineChart(stockList: ArrayList<StockData>) {
         val yAxisValues = ArrayList<PointValue>()
         val axisValues = ArrayList<AxisValue>()
 
@@ -278,24 +285,99 @@ class MainFragment : Fragment() {
         line_chart.visibility = View.VISIBLE
     }
 
-    private fun schedulePeriodicChartAnalyze(stockGrowthRate: Double){
+    private fun schedulePeriodicChartAnalyze(
+        params: StockApiCallParams
+    ) {
+        val paramsString = SerializeHelper.serializeToJson(params)
         val data = Data.Builder()
-            .putString(STOCK_NAME,stockList[0].stockName)
-            .putDouble(STOCK_GROWTH_RATE,stockGrowthRate)
-            .putDouble(CRITICAL_GROWTH_RATE,0.01)
+            .putString(API_CALL_PARAMS,paramsString)
 
-        val periodicWorkRequest = PeriodicWorkRequest.Builder(NotifyWorker::class.java,1,TimeUnit.MINUTES)
-            .addTag(PERIODIC_WORK_TAG)
-            .setInputData(data.build())
-            .build()
+        val periodicWorkRequest =
+            PeriodicWorkRequest.Builder(NotifyWorker::class.java, 1, TimeUnit.MINUTES)
+                .addTag(PERIODIC_WORK_TAG)
+                .setInputData(data.build())
+                .build()
 
         WorkManager.getInstance(requireContext())
             .enqueueUniquePeriodicWork(
-            PERIODIC_WORK_TAG,
-            ExistingPeriodicWorkPolicy.REPLACE,
-            periodicWorkRequest
-        )
+                PERIODIC_WORK_TAG,
+                ExistingPeriodicWorkPolicy.KEEP,
+                periodicWorkRequest
+            )
+
+        getWorkManagaerOutputData(periodicWorkRequest)
     }
+
+    private fun getWorkManagaerOutputData(periodicWorkRequest: PeriodicWorkRequest) {
+
+        val workInfo = WorkManager.getInstance(requireContext().applicationContext)
+            .getWorkInfosByTag(PERIODIC_WORK_TAG).get()
+
+
+        WorkManager.getInstance(requireContext()).getWorkInfoByIdLiveData(periodicWorkRequest.id)
+            .observe(this, Observer { workInfo ->
+
+                // Toast the work state
+                Toast.makeText(context!!,workInfo.state.name, Toast.LENGTH_LONG).show()
+
+                if (workInfo != null) {
+                    if (workInfo.state == WorkInfo.State.ENQUEUED) {
+                        // Show the work state in text view
+//                        textView.text = "Download enqueued."
+                    } else if (workInfo.state == WorkInfo.State.BLOCKED) {
+//                        textView.text = "Download blocked."
+                    } else if (workInfo.state == WorkInfo.State.RUNNING) {
+//                        textView.text = "Download running."
+                    }
+                }
+
+                // When work finished
+                if (workInfo != null && workInfo.state.isFinished) {
+                    if (workInfo.state == WorkInfo.State.SUCCEEDED) {
+//                        textView.text = "Download successful."
+
+                        // Get the output data
+                        val successOutputData = workInfo.outputData
+                        val outputData = successOutputData.getString(API_CALL_PARAMS)
+                        val stockList = SerializeHelper.deserializeFromJson(outputData!!) as ArrayList<StockData>
+                        val stockGrowthRate = successOutputData.getDouble(STOCK_GROWTH_RATE,0.0)
+
+                        scopeMainThread.launch {
+                            showLineChart(stockList)
+                            updateView(stockList.last())
+                            showDifferenceToOneHour(stockGrowthRate)
+                        }
+
+                    } else if (workInfo.state == WorkInfo.State.FAILED) {
+//                        textView.text = "Failed to download."
+                    } else if (workInfo.state == WorkInfo.State.CANCELLED) {
+//                        textView.text = "Work request cancelled."
+                    }
+                }
+            })
+    }
+
+    private fun isWorkScheduled(tag: String): Boolean {
+        val instance = WorkManager.getInstance()
+        val statuses: ListenableFuture<List<WorkInfo>> =
+            instance.getWorkInfosByTag(tag)
+        return try {
+            var running = false
+            val workInfoList: List<WorkInfo> = statuses.get()
+            for (workInfo in workInfoList) {
+                val state = workInfo.state
+//                running = state == WorkInfo.State.RUNNING or state == WorkInfo.State.ENQUEUED
+            }
+            running
+        } catch (e: ExecutionException) {
+            e.printStackTrace()
+            false
+        } catch (e: InterruptedException) {
+            e.printStackTrace()
+            false
+        }
+    }
+
 
     companion object {
         fun newInstance() = MainFragment()

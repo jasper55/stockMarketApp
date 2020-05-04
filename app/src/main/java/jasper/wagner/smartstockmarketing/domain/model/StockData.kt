@@ -1,4 +1,4 @@
-package jasper.wagner.smartstockmarketing.model
+package jasper.wagner.smartstockmarketing.domain.model
 
 import com.google.gson.annotations.SerializedName
 
