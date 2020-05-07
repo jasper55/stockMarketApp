@@ -68,10 +68,6 @@ class MainFragment : Fragment() {
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
 
         initAddButton()
-    }
-
-    override fun onResume() {
-        super.onResume()
         val stockName = "IBM"
         val apiParams = StockApiCallParams(
             stockName,
@@ -80,6 +76,7 @@ class MainFragment : Fragment() {
             Common.OutputSize.compact
         )
         schedulePeriodicStockAnalyzes(apiParams, 0.01)
+
     }
 
     override fun onDestroy() {
@@ -89,33 +86,37 @@ class MainFragment : Fragment() {
 
     private fun initAddButton() {
         add_stock.setOnClickListener {
-            CoroutineScope(IO).launch {
-
-                withContext(Main) {
-                    binding.progressBar.visibility = View.VISIBLE
-                }
-
-                var stockList = ArrayList<StockData>()
-                withContext(IO) {
-                    val stockName = "IBM"
-                    val apiParams = StockApiCallParams(
-                        stockName,
-                        Common.Function.intraDay,
-                        Common.Interval.min1,
-                        Common.OutputSize.compact
-                    )
-                    val usStockMarketApi = USStockMarketApi()
-                    stockList = usStockMarketApi.fetchStockMarketData(apiParams)
-                }
-
-                withContext(Main) {
-                    updateView(stockList.last())
-                    showDifferenceToOneHour(getStockGrowthRate(stockList))
-                    showLineChart(stockList)
-                }
-            }
+            val stockName = "IBM"
+            val apiParams = StockApiCallParams(
+                stockName,
+                Common.Function.intraDay,
+                Common.Interval.min1,
+                Common.OutputSize.compact
+            )
+            displayStockData(apiParams)
         }
 
+    }
+
+    private fun displayStockData(apiParams: StockApiCallParams) {
+        CoroutineScope(IO).launch {
+
+            withContext(Main) {
+                binding.progressBar.visibility = View.VISIBLE
+            }
+
+            var stockList = ArrayList<StockData>()
+            withContext(IO) {
+                val usStockMarketApi = USStockMarketApi()
+                stockList = usStockMarketApi.fetchStockMarketData(apiParams)
+            }
+
+            withContext(Main) {
+                updateView(stockList.last())
+                showDifferenceToOneHour(getStockGrowthRate(stockList))
+                showLineChart(stockList)
+            }
+        }
     }
 
 
@@ -128,7 +129,6 @@ class MainFragment : Fragment() {
         binding.low.text = "low: ${stockData.low}"
         binding.volume.text = "volume: ${stockData.volume}"
     }
-
     private fun showDifferenceToOneHour(stockGrowthRate: Double) {
         if (stockGrowthRate >= 0)
             stock_development_last_hour.setTextColor(Color.GREEN)
@@ -136,7 +136,6 @@ class MainFragment : Fragment() {
         stock_development_last_hour.text = "growth rate: $stockGrowthRate %"
         stock_development_last_hour.visibility = View.VISIBLE
     }
-
     private fun showLineChart(stockList: ArrayList<StockData>) {
         val yAxisValues = ArrayList<PointValue>()
         val axisValues = ArrayList<AxisValue>()
@@ -186,7 +185,7 @@ class MainFragment : Fragment() {
         growthMargin: Double
     ) {
 
-        val repeatInterval = 1L
+        val repeatInterval = 15L
         val timeUnit = TimeUnit.MINUTES
 
         val paramsString = SerializeHelper.serializeToJson(apiParams)
@@ -195,21 +194,20 @@ class MainFragment : Fragment() {
             .putDouble(GROWTH_MARGIN, growthMargin)
             .build()
 
-//        val constraints =
-//            Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+        val constraints =
+            Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
         val periodicWorkRequest =
             PeriodicWorkRequest.Builder(NotifyWorker::class.java, repeatInterval, timeUnit)
                 .addTag(PERIODIC_WORK_TAG)
-                .setInitialDelay(repeatInterval,timeUnit)
-//                .setConstraints(constraints)
+                .setConstraints(constraints)
                 .setInputData(data)
                 .build()
 
         WorkManager.getInstance(requireContext().applicationContext)
             .enqueueUniquePeriodicWork(
                 PERIODIC_WORK_TAG,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.REPLACE,
                 periodicWorkRequest
             )
 

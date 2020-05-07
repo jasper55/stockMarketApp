@@ -22,7 +22,6 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
 
     @NonNull
     override fun doWork(): Result {
-        // Method to trigger an instant notification
         val paramsString = inputData.getString(API_CALL_PARAMS)
         val growthMargin = inputData.getDouble(GROWTH_MARGIN,1.0)
         val apiParams = SerializeHelper.deserializeFromJson(paramsString!!) as StockApiCallParams
@@ -32,9 +31,9 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
             val stockList = usStockMarketApi.fetchStockMarketData(apiParams)
 
             val stockGrowthRate = getStockGrowthRate(stockList)
-//            if (abs(stockGrowthRate) >= growthMargin) {
+            if (abs(stockGrowthRate) >= growthMargin) {
                 createNotification(context, stockList, stockGrowthRate)
-//            }
+            }
         }
 
         return Result.success()
