@@ -2,13 +2,10 @@ package jasper.wagner.smartstockmarketing.ui.main
 
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.work.*
 import com.example.workoutreminder.data.network.USStockMarketApi
@@ -17,21 +14,19 @@ import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRa
 import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockData
-import jasper.wagner.smartstockmarketing.util.MathOperation
-import jasper.wagner.smartstockmarketing.util.NotificationBuilder
+import jasper.wagner.smartstockmarketing.ui.stockinfo.StockInfoFragment
 import jasper.wagner.smartstockmarketing.util.NotifyWorker
 import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.API_CALL_PARAMS
 import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.GROWTH_MARGIN
 import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.PERIODIC_WORK_TAG
-import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.STOCK_DATA_AVAILABLE
 import jasper.wagner.smartstockmarketing.util.SerializeHelper
 import kotlinx.android.synthetic.main.main_fragment.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import lecho.lib.hellocharts.model.*
+import java.io.Serializable
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 
 
 class MainFragment : Fragment() {
@@ -67,7 +62,7 @@ class MainFragment : Fragment() {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
 
-        initAddButton()
+
         val stockName = "IBM"
         val apiParams = StockApiCallParams(
             stockName,
@@ -75,8 +70,8 @@ class MainFragment : Fragment() {
             Common.Interval.min1,
             Common.OutputSize.compact
         )
+        showStockInfo(apiParams)
         schedulePeriodicStockAnalyzes(apiParams, 0.01)
-
     }
 
     override fun onDestroy() {
@@ -84,16 +79,29 @@ class MainFragment : Fragment() {
         parentJob.cancel()
     }
 
-    private fun initAddButton() {
+    private fun showStockInfo(apiParams: StockApiCallParams) {
         add_stock.setOnClickListener {
-            val stockName = "IBM"
-            val apiParams = StockApiCallParams(
-                stockName,
-                Common.Function.intraDay,
-                Common.Interval.min1,
-                Common.OutputSize.compact
-            )
-            displayStockData(apiParams)
+
+            val bundle = Bundle().apply {
+                putSerializable("API_PARAMS",apiParams as Serializable)
+            }
+
+            val stockInfoFragment = StockInfoFragment.newInstance()
+            stockInfoFragment.arguments = bundle
+
+            requireActivity().supportFragmentManager.beginTransaction()
+                .replace(jasper.wagner.smartstockmarketing.R.id.container, stockInfoFragment)
+                .addToBackStack(null)
+                .commit()
+
+//            val stockName = "IBM"
+//            val apiParams = StockApiCallParams(
+//                stockName,
+//                Common.Function.intraDay,
+//                Common.Interval.min1,
+//                Common.OutputSize.compact
+//            )
+//            displayStockData(apiParams)
         }
 
     }
@@ -213,7 +221,39 @@ class MainFragment : Fragment() {
 
     }
 
+//    fun manageFragmentTransaction(selectedFrag: String) {
+//        when (selectedFrag) {
+//            MAIN_FRAG_TAG -> {
+//                if (fragmentManager?.findFragmentByTag(MAIN_FRAG_TAG) != null) {
+//                    //if the fragment exists, show it.
+//                    fragmentManager?.beginTransaction()?.show(fragmentManager?.findFragmentByTag(MAIN_FRAG_TAG)!!)?.commit()
+//                } else {
+//                    //if the fragment does not exist, add it to fragment manager.
+//                    fragmentManager?.beginTransaction()?.add(R.id.container, MapFragment(), MAIN_FRAG_TAG)?.commit();
+//                }
+//                if (fragmentManager?.findFragmentByTag(LIST_FRAG_TAG) != null) {
+//                    //if the other fragment is visible, hide it.
+//                    fragmentManager?.beginTransaction()?.hide(fragmentManager?.findFragmentByTag(LIST_FRAG_TAG))?.commit();
+//                }
+//            }
+//            LIST_FRAG_TAG -> {
+//                if (fragmentManager?.findFragmentByTag(LIST_FRAG_TAG) != null) {
+//                    //if the fragment exists, show it.
+//                    fragmentManager?.beginTransaction()?.show(fragmentManager?.findFragmentByTag(LIST_FRAG_TAG))?.commit();
+//                } else {
+//                    //if the fragment does not exist, add it to fragment manager.
+//                    fragmentManager?.beginTransaction()?.add(R.id.container, ListFragment(), LIST_FRAG_TAG)?.commit();
+//                }
+//                if (fragmentManager?.findFragmentByTag(MAP_FRAG_TAG) != null) {
+//                    //if the other fragment is visible, hide it.
+//                    fragmentManager?.beginTransaction()?.hide(fragmentManager?.findFragmentByTag(MAP_FRAG_TAG))?.commit();
+//                }
+//            }
+//        }
+//    }
+
     companion object {
         fun newInstance() = MainFragment()
+        const val MAIN_FRAG_TAG = "MainFragment"
     }
 }
