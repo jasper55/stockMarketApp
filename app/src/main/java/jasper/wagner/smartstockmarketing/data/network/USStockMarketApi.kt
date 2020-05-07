@@ -6,18 +6,17 @@ import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockData
 import jasper.wagner.smartstockmarketing.util.DateFormatter
 import jasper.wagner.smartstockmarketing.util.DateFormatter.length
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 import okhttp3.*
 import org.json.JSONObject
-import java.io.IOException
 
 class USStockMarketApi {
 
     internal lateinit var client: OkHttpClient
     internal lateinit var request: Request
 
-    private fun createApiCall(params: StockApiCallParams){
+    private fun initApiCall(params: StockApiCallParams){
 
 
         val url = Common.createApiLink(
@@ -51,18 +50,19 @@ class USStockMarketApi {
         }
     }
 
-    suspend fun fetchStockMarketData(params: StockApiCallParams): ArrayList<StockData> = withContext(
-        Dispatchers.IO){
-        createApiCall(params)
+    suspend fun fetchStockMarketData(apiParams: StockApiCallParams): ArrayList<StockData>
+    = withContext(IO) {
+        initApiCall(apiParams)
 
         val stockList = ArrayList<StockData>()
-        client.newCall(request)
-            .enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    Log.d("ERROR", e.toString())
-                }
+        val response = client.newCall(request)
+            .execute()
+//            .enqueue(object : Callback {
+//                override fun onFailure(call: Call, e: IOException) {
+//                    Log.d("ERROR", e.toString())
+//                }
 
-                override fun onResponse(call: Call, response: Response) {
+//                override fun onResponse(call: Call, response: Response) {
                     val body = response.body!!.string()
                     val jsonResponse = JSONObject(body)
                     Log.d("API body response", body)
@@ -100,7 +100,7 @@ class USStockMarketApi {
                                         }
 
                                         val stockData = StockData(
-                                            stockName = params.stockName,
+                                            stockName = apiParams.stockName,
                                             time = "$hour:$min",
                                             open = getString("1. open").toDouble(),
                                             high = getString("2. high").toDouble(),
@@ -122,10 +122,26 @@ class USStockMarketApi {
                             }
                         }
                     }
-                }
-            })
+//                }
+//            })
 
         return@withContext stockList
+    }
+
+    fun isDataAvailable(params: StockApiCallParams): Boolean {
+            initApiCall(params)
+
+            val response = client.newCall(request)
+                .execute()
+
+        if (response.body != null) {
+            val body = response.body!!.string()
+            val jsonResponse = JSONObject(body)
+            Log.d("API body response", body)
+
+        return jsonResponse.has("Meta Data")
+        }
+        else return false
     }
 
 

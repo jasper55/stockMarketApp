@@ -1,16 +1,11 @@
 package jasper.wagner.smartstockmarketing.util
 
-import android.graphics.Bitmap
-
 import com.google.gson.Gson
-
-
-
 
 object SerializeHelper {
 
     // Serialize a single object.
-    fun serializeToJson(any: Any): String? {
+    fun serializeToJson(any: Any): String {
         val gson = Gson()
         return gson.toJson(any)
     }
