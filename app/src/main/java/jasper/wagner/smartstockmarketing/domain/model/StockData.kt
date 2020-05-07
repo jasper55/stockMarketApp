@@ -9,5 +9,6 @@ data class StockData(
     @SerializedName("2. high") val high: Double,
     @SerializedName("3. low") val low: Double,
     @SerializedName("4. close") val close: Double,
-    @SerializedName("5. volume") val volume: Double
+    @SerializedName("5. volume") val volume: Double,
+val growth: Double
 )

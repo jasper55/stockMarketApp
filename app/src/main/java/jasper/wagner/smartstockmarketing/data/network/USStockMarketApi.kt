@@ -106,7 +106,8 @@ class USStockMarketApi {
                                             high = getString("2. high").toDouble(),
                                             low = getString("3. low").toDouble(),
                                             close = getString("4. close").toDouble(),
-                                            volume = getString("5. volume").toDouble()
+                                            volume = getString("5. volume").toDouble(),
+                                            growth = 0.0
                                         )
 
                                         stockList.add(stockData)

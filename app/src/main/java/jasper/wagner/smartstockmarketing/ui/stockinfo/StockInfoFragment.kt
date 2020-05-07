@@ -8,12 +8,12 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.example.workoutreminder.data.network.USStockMarketApi
-import jasper.wagner.cryptotracking.common.Common
 import jasper.wagner.smartstockmarketing.common.StockOperations
 import jasper.wagner.smartstockmarketing.databinding.StockInfoFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockData
-import kotlinx.android.synthetic.main.main_fragment.*
+import kotlinx.android.synthetic.main.stock_data_item.stock_development_last_hour
+import kotlinx.android.synthetic.main.stock_info_fragment.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

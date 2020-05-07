@@ -1,12 +1,13 @@
 package jasper.wagner.smartstockmarketing.ui.main
 
-import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import androidx.recyclerview.widget.DefaultItemAnimator
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.work.*
 import com.example.workoutreminder.data.network.USStockMarketApi
 import jasper.wagner.cryptotracking.common.Common
@@ -14,6 +15,7 @@ import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRa
 import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockData
+import jasper.wagner.smartstockmarketing.ui.adapter.StockItemAdapter
 import jasper.wagner.smartstockmarketing.ui.stockinfo.StockInfoFragment
 import jasper.wagner.smartstockmarketing.util.NotifyWorker
 import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.API_CALL_PARAMS
@@ -22,30 +24,34 @@ import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.PERIODIC_WO
 import jasper.wagner.smartstockmarketing.util.SerializeHelper
 import kotlinx.android.synthetic.main.main_fragment.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Dispatchers.Main
-import lecho.lib.hellocharts.model.*
 import java.io.Serializable
+import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 
 
-class MainFragment : Fragment() {
+class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
     private lateinit var binding: MainFragmentBinding
 
-    private val parentJob = Job()
-    private val coroutineExceptionHandler: CoroutineExceptionHandler =
-        CoroutineExceptionHandler { _, throwable ->
-            coroutineScope.launch(Dispatchers.Main) {
-//                binding.errorContainer.visibility = View.VISIBLE
-//                binding.errorContainer.text = throwable.message
-            }
-            GlobalScope.launch { println("Caught $throwable") }
-        }
-    private val coroutineScope =
-        CoroutineScope(Dispatchers.Main + parentJob + coroutineExceptionHandler)
-    private val scopeMainThread =
-        CoroutineScope(parentJob + Dispatchers.Main + coroutineExceptionHandler)
+    private val itemList = ArrayList<StockData>()
+    private val nameList = ArrayList<String>()
+    private lateinit var apiParams: StockApiCallParams
+    private lateinit var itemAdapter : StockItemAdapter
+
+//    private val parentJob = Job()
+//    private val coroutineExceptionHandler: CoroutineExceptionHandler =
+//        CoroutineExceptionHandler { _, throwable ->
+//            coroutineScope.launch(Dispatchers.Main) {
+////                binding.errorContainer.visibility = View.VISIBLE
+////                binding.errorContainer.text = throwable.message
+//            }
+//            GlobalScope.launch { println("Caught $throwable") }
+//        }
+//    private val coroutineScope =
+//        CoroutineScope(Dispatchers.Main + parentJob + coroutineExceptionHandler)
+//    private val scopeMainThread =
+//        CoroutineScope(parentJob + Dispatchers.Main + coroutineExceptionHandler)
 
     private lateinit var viewModel: MainViewModel
 
@@ -55,6 +61,10 @@ class MainFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         binding = MainFragmentBinding.inflate(layoutInflater)
+        itemAdapter = StockItemAdapter(this)
+        binding.root
+        binding.root
+        binding.root
         return binding.root
     }
 
@@ -62,24 +72,66 @@ class MainFragment : Fragment() {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
 
+//        stock_list.layoutManager = LinearLayoutManager(context)
+//        stock_list.itemAnimator = DefaultItemAnimator()
+//        stock_list.adapter = itemAdapter
 
-        val stockName = "IBM"
-        val apiParams = StockApiCallParams(
-            stockName,
-            Common.Function.intraDay,
-            Common.Interval.min1,
-            Common.OutputSize.compact
-        )
-        showStockInfo(apiParams)
-        schedulePeriodicStockAnalyzes(apiParams, 0.01)
+        itemAdapter = StockItemAdapter(this)
+        stock_list.layoutManager = LinearLayoutManager(requireContext())
+        stock_list.itemAnimator = DefaultItemAnimator()
+        stock_list.adapter = itemAdapter
+
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val usStockMarketApi = USStockMarketApi()
+            nameList.clear()
+            val stockName = "IBM"
+            nameList.add("IBM")
+//        nameList.add("microsoft")
+            for (name in nameList) {
+                apiParams = StockApiCallParams(
+                    name,
+                    Common.Function.intraDay,
+                    Common.Interval.min1,
+                    Common.OutputSize.compact
+                )
+
+
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.VISIBLE
+                    var growth = 0.0
+
+                    var stockDataList = ArrayList<StockData>()
+                    withContext(Dispatchers.IO) {
+                        stockDataList = usStockMarketApi.fetchStockMarketData(apiParams)
+                        growth = getStockGrowthRate(stockDataList)
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        addToList(
+                            stockDataList.last()
+                                .copy(growth = growth)
+                        )
+
+                    }
+                }
+            }
+            schedulePeriodicStockAnalyzes(apiParams, 0.01)
+
+            withContext(Dispatchers.Main) {
+                binding.progressBar.visibility = View.GONE
+            }
+        }
+
+//        initAddButton(apiParams)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        parentJob.cancel()
+//        parentJob.cancel()
     }
 
-    private fun showStockInfo(apiParams: StockApiCallParams) {
+    private fun initAddButton(apiParams: StockApiCallParams) {
         add_stock.setOnClickListener {
 
             val bundle = Bundle().apply {
@@ -93,99 +145,13 @@ class MainFragment : Fragment() {
                 .replace(jasper.wagner.smartstockmarketing.R.id.container, stockInfoFragment)
                 .addToBackStack(null)
                 .commit()
-
-//            val stockName = "IBM"
-//            val apiParams = StockApiCallParams(
-//                stockName,
-//                Common.Function.intraDay,
-//                Common.Interval.min1,
-//                Common.OutputSize.compact
-//            )
-//            displayStockData(apiParams)
         }
 
     }
 
-    private fun displayStockData(apiParams: StockApiCallParams) {
-        CoroutineScope(IO).launch {
-
-            withContext(Main) {
-                binding.progressBar.visibility = View.VISIBLE
-            }
-
-            var stockList = ArrayList<StockData>()
-            withContext(IO) {
-                val usStockMarketApi = USStockMarketApi()
-                stockList = usStockMarketApi.fetchStockMarketData(apiParams)
-            }
-
-            withContext(Main) {
-                updateView(stockList.last())
-                showDifferenceToOneHour(getStockGrowthRate(stockList))
-                showLineChart(stockList)
-            }
-        }
-    }
-
-
-    private fun updateView(stockData: StockData) {
-        binding.progressBar.visibility = View.GONE
-        binding.stockName.text = "${stockData.stockName}"
-        binding.open.text = "open: ${stockData.open}"
-        binding.close.text = "close: ${stockData.close}"
-        binding.high.text = "high: ${stockData.high}"
-        binding.low.text = "low: ${stockData.low}"
-        binding.volume.text = "volume: ${stockData.volume}"
-    }
-    private fun showDifferenceToOneHour(stockGrowthRate: Double) {
-        if (stockGrowthRate >= 0)
-            stock_development_last_hour.setTextColor(Color.GREEN)
-        else stock_development_last_hour.setTextColor(Color.RED)
-        stock_development_last_hour.text = "growth rate: $stockGrowthRate %"
-        stock_development_last_hour.visibility = View.VISIBLE
-    }
-    private fun showLineChart(stockList: ArrayList<StockData>) {
-        val yAxisValues = ArrayList<PointValue>()
-        val axisValues = ArrayList<AxisValue>()
-
-        val line = Line(yAxisValues).setColor(Color.parseColor("#9C27B0"))
-        line.pointRadius = 0
-        line.strokeWidth = 2
-
-        val lines = ArrayList<Line>()
-        lines.add(line)
-
-        val size = stockList.size
-        val list = stockList.reversed()
-
-        var i = 0
-        while (i < size) {
-            axisValues.add(i, AxisValue(i.toFloat()).setLabel(list[i].time))
-            yAxisValues.add(i, PointValue(i.toFloat(), (list[i].close).toFloat()))
-            i += 1
-        }
-
-        val axis = Axis()
-        val yAxis = Axis()
-        axis.values = axisValues
-        axis.textSize = 12
-        axis.textColor = Color.parseColor("#03A9F4")
-        yAxis.textColor = Color.parseColor("#03A9F4")
-        yAxis.textSize = 12
-
-        val data = LineChartData()
-        data.lines = lines
-
-        data.axisXBottom = axis
-        data.axisYLeft = yAxis
-
-        line_chart.lineChartData = data
-//        val viewport = Viewport(line_chart.maximumViewport)
-//        viewport.top = 110f
-//        line_chart.maximumViewport = viewport
-//        line_chart.currentViewport = viewport
-
-        line_chart.visibility = View.VISIBLE
+    private fun addToList(stockData: StockData){
+        (0..Random().nextInt(100)).mapTo(itemList) { stockData }
+        itemAdapter.submitList(itemList)
     }
 
     private fun schedulePeriodicStockAnalyzes(
@@ -221,39 +187,22 @@ class MainFragment : Fragment() {
 
     }
 
-//    fun manageFragmentTransaction(selectedFrag: String) {
-//        when (selectedFrag) {
-//            MAIN_FRAG_TAG -> {
-//                if (fragmentManager?.findFragmentByTag(MAIN_FRAG_TAG) != null) {
-//                    //if the fragment exists, show it.
-//                    fragmentManager?.beginTransaction()?.show(fragmentManager?.findFragmentByTag(MAIN_FRAG_TAG)!!)?.commit()
-//                } else {
-//                    //if the fragment does not exist, add it to fragment manager.
-//                    fragmentManager?.beginTransaction()?.add(R.id.container, MapFragment(), MAIN_FRAG_TAG)?.commit();
-//                }
-//                if (fragmentManager?.findFragmentByTag(LIST_FRAG_TAG) != null) {
-//                    //if the other fragment is visible, hide it.
-//                    fragmentManager?.beginTransaction()?.hide(fragmentManager?.findFragmentByTag(LIST_FRAG_TAG))?.commit();
-//                }
-//            }
-//            LIST_FRAG_TAG -> {
-//                if (fragmentManager?.findFragmentByTag(LIST_FRAG_TAG) != null) {
-//                    //if the fragment exists, show it.
-//                    fragmentManager?.beginTransaction()?.show(fragmentManager?.findFragmentByTag(LIST_FRAG_TAG))?.commit();
-//                } else {
-//                    //if the fragment does not exist, add it to fragment manager.
-//                    fragmentManager?.beginTransaction()?.add(R.id.container, ListFragment(), LIST_FRAG_TAG)?.commit();
-//                }
-//                if (fragmentManager?.findFragmentByTag(MAP_FRAG_TAG) != null) {
-//                    //if the other fragment is visible, hide it.
-//                    fragmentManager?.beginTransaction()?.hide(fragmentManager?.findFragmentByTag(MAP_FRAG_TAG))?.commit();
-//                }
-//            }
-//        }
-//    }
-
     companion object {
         fun newInstance() = MainFragment()
         const val MAIN_FRAG_TAG = "MainFragment"
+    }
+
+    override fun onItemClick(item: StockData, position: Int) {
+        val bundle = Bundle().apply {
+            putSerializable("API_PARAMS",apiParams as Serializable)
+        }
+
+        val stockInfoFragment = StockInfoFragment.newInstance()
+        stockInfoFragment.arguments = bundle
+
+        requireActivity().supportFragmentManager.beginTransaction()
+            .replace(jasper.wagner.smartstockmarketing.R.id.container, stockInfoFragment)
+            .addToBackStack(null)
+            .commit()
     }
 }
