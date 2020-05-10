@@ -87,7 +87,16 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
             nameList.clear()
             val stockName = "IBM"
             nameList.add("IBM")
-//        nameList.add("microsoft")
+            nameList.add("BA")
+            nameList.add("BAC")
+//            nameList.add("BABA")
+//            nameList.add("GOLD")
+//            nameList.add("BIDU")
+//            nameList.add("BAYRY")    //not working
+//            nameList.add("BLDP")
+//            nameList.add("BHC")
+//            nameList.add("BK")
+
             for (name in nameList) {
                 apiParams = StockApiCallParams(
                     name,
@@ -150,7 +159,8 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
     }
 
     private fun addToList(stockData: StockData){
-        (0..Random().nextInt(100)).mapTo(itemList) { stockData }
+        itemList.add(stockData)
+//        (0..Random().nextInt(100)).mapTo(itemList) { stockData }
         itemAdapter.submitList(itemList)
     }
 
