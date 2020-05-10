@@ -20,7 +20,7 @@ class NotificationBuilder {
 // Create the NotificationChannel, but only on API 26+ because
 // the NotificationChannel class is new and not in the support library
 
-    fun createNotification(context: Context, stockName: String, stockGrowthRate: Double, channelID: String) {
+    fun createNotification(context: Context, stockName: String, stockGrowthRate: Double) {
 
         val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
@@ -48,7 +48,7 @@ class NotificationBuilder {
             //build the notification
             val notificationBuilder = Notification.Builder(
                 context,
-                channelID
+                workout_notification_channel_ID
             )
                 .setStyle(
                     bigTextStyle(stockName)
