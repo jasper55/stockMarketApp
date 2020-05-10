@@ -6,6 +6,7 @@ import androidx.work.Data
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.example.workoutreminder.data.network.USStockMarketApi
+import jasper.wagner.cryptotracking.common.Common.getWorkTag
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockData
@@ -26,13 +27,14 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
         val growthMargin = inputData.getDouble(GROWTH_MARGIN,1.0)
         val apiParams = SerializeHelper.deserializeFromJson(paramsString!!) as StockApiCallParams
 
+        val channelID = getWorkTag(apiParams)
         val usStockMarketApi = USStockMarketApi()
         CoroutineScope(IO).launch {
             val stockList = usStockMarketApi.fetchStockMarketData(apiParams)
 
             val stockGrowthRate = getStockGrowthRate(stockList)
             if (abs(stockGrowthRate) >= growthMargin) {
-                createNotification(context, stockList, stockGrowthRate)
+                createNotification(context, stockList, stockGrowthRate, channelID)
             }
         }
 
@@ -46,12 +48,14 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
     private fun createNotification(
         context: Context,
         stockList: ArrayList<StockData>,
-        stockGrowthRate: Double
+        stockGrowthRate: Double,
+        channelID: String
     ) {
         NotificationBuilder().createNotification(
             context,
             stockList.last().stockName,
-            stockGrowthRate
+            stockGrowthRate,
+            channelID
         )
     }
 

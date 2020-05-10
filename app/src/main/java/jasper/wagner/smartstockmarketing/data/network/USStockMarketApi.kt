@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.withContext
 import okhttp3.*
 import org.json.JSONObject
+import java.io.IOException
 
 class USStockMarketApi {
 
@@ -61,7 +62,7 @@ class USStockMarketApi {
 //                override fun onFailure(call: Call, e: IOException) {
 //                    Log.d("ERROR", e.toString())
 //                }
-
+//
 //                override fun onResponse(call: Call, response: Response) {
                     val body = response.body!!.string()
                     val jsonResponse = JSONObject(body)

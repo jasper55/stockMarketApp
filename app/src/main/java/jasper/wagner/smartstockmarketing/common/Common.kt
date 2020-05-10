@@ -1,5 +1,8 @@
 package jasper.wagner.cryptotracking.common
 
+import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
+import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.PERIODIC_WORK_TAG
+
 
 object Common{
     const val imageUrl = "https://res.cloudinary.com/dxi90ksom/image/upload/"
@@ -61,6 +64,10 @@ object Common{
                 "&interval=" + interval +
                 "&outputsize=" + outputSize +
                 "&apikey=" + API_KEY
+    }
+
+    fun getWorkTag(apiCallParams: StockApiCallParams): String {
+        return "${PERIODIC_WORK_TAG}_${apiCallParams.stockName.toUpperCase()}"
     }
 
 }

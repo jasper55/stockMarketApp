@@ -48,23 +48,25 @@ class StockInfoFragment : Fragment() {
 
 
     private fun loadData(apiParams: StockApiCallParams) {
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.Main).launch {
 
-            withContext(Dispatchers.Main) {
-                binding.progressBar.visibility = View.VISIBLE
-            }
+//            withContext(Dispatchers.Main) {
+            binding.progressBar.visibility = View.VISIBLE
+//            }
 
             var stockList = ArrayList<StockData>()
-            withContext(Dispatchers.IO) {
-                val usStockMarketApi = USStockMarketApi()
-                stockList = usStockMarketApi.fetchStockMarketData(apiParams)
-            }
+//            withContext(Dispatchers.IO) {
+            val usStockMarketApi = USStockMarketApi()
+            stockList =
+                withContext(Dispatchers.IO) {
+                    usStockMarketApi.fetchStockMarketData(apiParams)
+                }
 
-            withContext(Dispatchers.Main) {
-                updateView(stockList.last())
-                showDifferenceToOneHour(StockOperations.getStockGrowthRate(stockList))
-                showLineChart(stockList)
-            }
+//            withContext(Dispatchers.Main) {
+            showDifferenceToOneHour(StockOperations.getStockGrowthRate(stockList))
+            showLineChart(stockList)
+            updateView(stockList.last())
+//            }
         }
     }
 
@@ -78,6 +80,7 @@ class StockInfoFragment : Fragment() {
         binding.low.text = "low: ${stockData.low}"
         binding.volume.text = "volume: ${stockData.volume}"
     }
+
     private fun showDifferenceToOneHour(stockGrowthRate: Double) {
         if (stockGrowthRate >= 0)
             stock_development_last_hour.setTextColor(Color.GREEN)
@@ -85,6 +88,7 @@ class StockInfoFragment : Fragment() {
         stock_development_last_hour.text = "growth rate: $stockGrowthRate %"
         stock_development_last_hour.visibility = View.VISIBLE
     }
+
     private fun showLineChart(stockList: ArrayList<StockData>) {
         val yAxisValues = ArrayList<PointValue>()
         val axisValues = ArrayList<AxisValue>()
@@ -130,10 +134,9 @@ class StockInfoFragment : Fragment() {
     }
 
 
-
-    companion object{
-        fun newInstance():StockInfoFragment{
-            return  StockInfoFragment();
+    companion object {
+        fun newInstance(): StockInfoFragment {
+            return StockInfoFragment();
         }
     }
 }
