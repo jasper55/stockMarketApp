@@ -20,7 +20,7 @@ class NotificationBuilder {
 // Create the NotificationChannel, but only on API 26+ because
 // the NotificationChannel class is new and not in the support library
 
-    fun createNotification(context: Context, stockName: String, stockGrowthRate: Double, channelID: String) {
+    fun createNotification(context: Context, stockName: String, stockGrowthRate: Double, channelID: Int) {
 
         val notificationManager = context.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
@@ -36,7 +36,7 @@ class NotificationBuilder {
                 longArrayOf(0,10, 2, 10, 2, 80, 2, 10, 2, 10, 2, 80, 2, 10, 2, 10, 2, 10, 2, 10)
 //                longArrayOf(0, 10, 2, 10, 2, 80)
             //build the actual notification channel, giving it a unique ID and name
-            val channel = NotificationChannel(channelID, workout_notification_channel_name, importance)
+            val channel = NotificationChannel(notification_channel_ID, notification_channel_name, importance)
 
             channel.apply {
                 lightColor = Color.MAGENTA
@@ -48,7 +48,7 @@ class NotificationBuilder {
             //build the notification
             val notificationBuilder = Notification.Builder(
                 context,
-                channelID
+                notification_channel_ID
             )
                 .setStyle(
                     bigTextStyle(stockName)
@@ -75,7 +75,7 @@ class NotificationBuilder {
                 )
 
             notificationManager.createNotificationChannel(channel)
-            notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
+            notificationManager.notify(channelID, notificationBuilder.build())
         }
     }
 
@@ -103,8 +103,8 @@ class NotificationBuilder {
     }
 
     companion object {
-        const val workout_notification_channel_ID = "1"
-        const val NOTIFICATION_ID = 100
-        const val workout_notification_channel_name = "Stock market alert channel"
+        const val notification_channel_ID = "1"
+        const val NOTIFICATION_ID = "NOTIFICATION_ID"
+        const val notification_channel_name = "Stock market alert channel"
     }
 }

@@ -11,12 +11,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.work.*
 import com.example.workoutreminder.data.network.USStockMarketApi
 import jasper.wagner.cryptotracking.common.Common
+import jasper.wagner.cryptotracking.common.Common.getWorkTag
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockData
 import jasper.wagner.smartstockmarketing.ui.adapter.StockItemAdapter
 import jasper.wagner.smartstockmarketing.ui.stockinfo.StockInfoFragment
+import jasper.wagner.smartstockmarketing.util.NotificationBuilder.Companion.NOTIFICATION_ID
 import jasper.wagner.smartstockmarketing.util.NotifyWorker
 import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.API_CALL_PARAMS
 import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.GROWTH_MARGIN
@@ -92,13 +94,14 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
             val stockName = "IBM"
             nameList.add("IBM")
             nameList.add("BAC")
-            nameList.add("BABA")
+//            nameList.add("BABA")
 //            nameList.add("GOLD")
 //            nameList.add("BIDU")
-//            nameList.add("BAYRY")    //not working
 //            nameList.add("BLDP")
 //            nameList.add("BHC")
 //            nameList.add("BK")
+            //            nameList.add("BAYRY")    //not working
+
 
             for (name in nameList) {
                 apiParams = StockApiCallParams(
@@ -114,10 +117,12 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
                     var growth = 0.0
 
                     var stockDataList = ArrayList<StockData>()
-                    withContext(Dispatchers.IO) {
+                    val job = async {
                         stockDataList = usStockMarketApi.fetchStockMarketData(apiParams)
                         growth = getStockGrowthRate(stockDataList)
+                        schedulePeriodicStockAnalyzes(apiParams, 0.01, itemList.size+1)
                     }
+                    job.await()
 
                     withContext(Dispatchers.Main) {
                         addToList(
@@ -128,7 +133,6 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
                     }
                 }
             }
-            schedulePeriodicStockAnalyzes(apiParams, 0.01)
 
             withContext(Dispatchers.Main) {
                 binding.progressBar.visibility = View.GONE
@@ -171,7 +175,8 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
     private fun schedulePeriodicStockAnalyzes(
         apiParams: StockApiCallParams,
-        growthMargin: Double
+        growthMargin: Double,
+        channelId: Int
     ) {
 
         val repeatInterval = 15L
@@ -181,6 +186,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         val data = Data.Builder()
             .putString(API_CALL_PARAMS, paramsString)
             .putDouble(GROWTH_MARGIN, growthMargin)
+            .putInt(NOTIFICATION_ID, channelId)
             .build()
 
         val constraints =
@@ -188,14 +194,14 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
         val periodicWorkRequest =
             PeriodicWorkRequest.Builder(NotifyWorker::class.java, repeatInterval, timeUnit)
-                .addTag(PERIODIC_WORK_TAG)
+                .addTag(getWorkTag(apiParams))
                 .setConstraints(constraints)
                 .setInputData(data)
                 .build()
 
         WorkManager.getInstance(requireContext().applicationContext)
             .enqueueUniquePeriodicWork(
-                PERIODIC_WORK_TAG,
+                getWorkTag(apiParams),
                 ExistingPeriodicWorkPolicy.REPLACE,
                 periodicWorkRequest
             )

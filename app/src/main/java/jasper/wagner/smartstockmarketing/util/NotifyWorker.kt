@@ -10,6 +10,7 @@ import jasper.wagner.cryptotracking.common.Common.getWorkTag
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockData
+import jasper.wagner.smartstockmarketing.util.NotificationBuilder.Companion.NOTIFICATION_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
@@ -25,9 +26,9 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
     override fun doWork(): Result {
         val paramsString = inputData.getString(API_CALL_PARAMS)
         val growthMargin = inputData.getDouble(GROWTH_MARGIN,1.0)
+        val channelID = inputData.getInt(NOTIFICATION_ID,100)
         val apiParams = SerializeHelper.deserializeFromJson(paramsString!!) as StockApiCallParams
 
-        val channelID = getWorkTag(apiParams)
         val usStockMarketApi = USStockMarketApi()
         CoroutineScope(IO).launch {
             val stockList = usStockMarketApi.fetchStockMarketData(apiParams)
@@ -49,7 +50,7 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
         context: Context,
         stockList: ArrayList<StockData>,
         stockGrowthRate: Double,
-        channelID: String
+        channelID: Int
     ) {
         NotificationBuilder().createNotification(
             context,
