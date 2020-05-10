@@ -61,10 +61,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         savedInstanceState: Bundle?
     ): View {
         binding = MainFragmentBinding.inflate(layoutInflater)
-        itemAdapter = StockItemAdapter(this)
-        binding.root
-        binding.root
-        binding.root
+//        itemAdapter = StockItemAdapter(this)
         return binding.root
     }
 
@@ -82,12 +79,27 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         stock_list.adapter = itemAdapter
 
 
+
+
+//        initAddButton(apiParams)
+    }
+
+    override fun onResume() {
+        super.onResume()
         CoroutineScope(Dispatchers.IO).launch {
             val usStockMarketApi = USStockMarketApi()
             nameList.clear()
             val stockName = "IBM"
             nameList.add("IBM")
-//        nameList.add("microsoft")
+            nameList.add("BAC")
+            nameList.add("BABA")
+//            nameList.add("GOLD")
+//            nameList.add("BIDU")
+//            nameList.add("BAYRY")    //not working
+//            nameList.add("BLDP")
+//            nameList.add("BHC")
+//            nameList.add("BK")
+
             for (name in nameList) {
                 apiParams = StockApiCallParams(
                     name,
@@ -120,10 +132,9 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
             withContext(Dispatchers.Main) {
                 binding.progressBar.visibility = View.GONE
+                updateView()
             }
         }
-
-//        initAddButton(apiParams)
     }
 
     override fun onDestroy() {
@@ -150,7 +161,11 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
     }
 
     private fun addToList(stockData: StockData){
-        (0..Random().nextInt(100)).mapTo(itemList) { stockData }
+        itemList.add(stockData)
+//        (0..Random().nextInt(100)).mapTo(itemList) { stockData }
+    }
+
+    private fun updateView(){
         itemAdapter.submitList(itemList)
     }
 
@@ -193,6 +208,13 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
     }
 
     override fun onItemClick(item: StockData, position: Int) {
+        val name = item.stockName
+        val apiParams = StockApiCallParams(
+        name,
+        Common.Function.intraDay,
+        Common.Interval.min1,
+        Common.OutputSize.compact
+        )
         val bundle = Bundle().apply {
             putSerializable("API_PARAMS",apiParams as Serializable)
         }
