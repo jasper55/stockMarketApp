@@ -1,6 +1,7 @@
 package jasper.wagner.smartstockmarketing.domain.model
 
 import com.google.gson.annotations.SerializedName
+import java.io.Serializable
 
 data class StockData(
     @SerializedName("stockName") val stockName: String,
@@ -11,4 +12,4 @@ data class StockData(
     @SerializedName("4. close") val close: Double,
     @SerializedName("5. volume") val volume: Double,
 val growth: Double
-)
+): Serializable

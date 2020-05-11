@@ -12,6 +12,7 @@ import jasper.wagner.smartstockmarketing.common.StockOperations
 import jasper.wagner.smartstockmarketing.databinding.StockInfoFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockData
+import jasper.wagner.smartstockmarketing.util.SharedPrefs
 import kotlinx.android.synthetic.main.stock_data_item.stock_development_last_hour
 import kotlinx.android.synthetic.main.stock_info_fragment.*
 import kotlinx.coroutines.CoroutineScope
@@ -38,8 +39,12 @@ class StockInfoFragment : Fragment() {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(StockInfoViewModel::class.java)
 
-        val apiParams = arguments?.getSerializable("API_PARAMS") as StockApiCallParams
-        loadData(apiParams)
+//        val apiParams = arguments?.getSerializable("API_PARAMS") as StockApiCallParams
+        val stockName = arguments?.getString("STOCK_NAME")
+        val stockList = SharedPrefs.getStockDataFromPrefs(requireContext().applicationContext,stockName!!)
+
+//        loadData(apiParams)
+        showData(stockList)
     }
 
     override fun onDestroy() {
@@ -48,25 +53,38 @@ class StockInfoFragment : Fragment() {
 
 
     private fun loadData(apiParams: StockApiCallParams) {
-        CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.IO).launch {
 
-//            withContext(Dispatchers.Main) {
-            binding.progressBar.visibility = View.VISIBLE
-//            }
+            withContext(Dispatchers.Main) {
+                binding.progressBar.visibility = View.VISIBLE
+            }
 
             var stockList = ArrayList<StockData>()
-//            withContext(Dispatchers.IO) {
             val usStockMarketApi = USStockMarketApi()
-            stockList =
-                withContext(Dispatchers.IO) {
-                    usStockMarketApi.fetchStockMarketData(apiParams)
-                }
+            withContext(Dispatchers.IO) {
+                stockList = usStockMarketApi.fetchStockMarketData(apiParams)
+            }
 
-//            withContext(Dispatchers.Main) {
-            showDifferenceToOneHour(StockOperations.getStockGrowthRate(stockList))
-            showLineChart(stockList)
-            updateView(stockList.last())
-//            }
+            withContext(Dispatchers.Main) {
+                showDifferenceToOneHour(StockOperations.getStockGrowthRate(stockList))
+                showLineChart(stockList)
+                updateView(stockList.last())
+            }
+        }
+    }
+
+    private fun showData(stockList: ArrayList<StockData>) {
+        CoroutineScope(Dispatchers.IO).launch {
+
+            withContext(Dispatchers.Main) {
+                binding.progressBar.visibility = View.VISIBLE
+            }
+
+            withContext(Dispatchers.Main) {
+                showDifferenceToOneHour(StockOperations.getStockGrowthRate(stockList))
+                showLineChart(stockList)
+                updateView(stockList.last())
+            }
         }
     }
 

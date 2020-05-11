@@ -55,7 +55,7 @@ class USStockMarketApi {
     = withContext(IO) {
         initApiCall(apiParams)
 
-        val stockList = ArrayList<StockData>()
+        var stockList = ArrayList<StockData>()
         val response = client.newCall(request)
             .execute()
 //            .enqueue(object : Callback {
@@ -64,70 +64,77 @@ class USStockMarketApi {
 //                }
 //
 //                override fun onResponse(call: Call, response: Response) {
-                    val body = response.body!!.string()
-                    val jsonResponse = JSONObject(body)
-                    Log.d("API body response", body)
-
-                    if (jsonResponse.has("Meta Data")) {
-                        val metaData = jsonResponse.getJSONObject("Meta Data")
-
-                        val lastRefreshed = metaData.get("3. Last Refreshed").toString()
-                        val timeInterval = metaData.get("4. Interval").toString()
-
-                        if (jsonResponse.has("Time Series ($timeInterval)")) {
-                            val data = jsonResponse.getJSONObject("Time Series ($timeInterval)")
-                            val date = DateFormatter.getDate(lastRefreshed)
-                            val time = DateFormatter.getTime(date, lastRefreshed)
-                            var hour = DateFormatter.getHour(time)
-                            var minute = DateFormatter.getMinute(time, timeInterval)
-                            Log.d("DATE", DateFormatter.getDate(lastRefreshed))
-                            Log.d("TIME", DateFormatter.getTime(date, lastRefreshed))
-
-                            var timeStampAvailable = true
-                            while (timeStampAvailable) {
-
-                                val formattedTimestamp = getFormattedTimeStamp(minute, hour, date)
-                                Log.d("TIME_STAMP", formattedTimestamp)
-
-                                timeStampAvailable = data.has(formattedTimestamp)
-                                if (timeStampAvailable) {
-                                    data.getJSONObject(formattedTimestamp).apply {
-
-                                        var min = ""
-                                        min = if (minute == 0) {
-                                            "00"
-                                        } else {
-                                            minute.toString()
-                                        }
-
-                                        val stockData = StockData(
-                                            stockName = apiParams.stockName,
-                                            time = "$hour:$min",
-                                            open = getString("1. open").toDouble(),
-                                            high = getString("2. high").toDouble(),
-                                            low = getString("3. low").toDouble(),
-                                            close = getString("4. close").toDouble(),
-                                            volume = getString("5. volume").toDouble(),
-                                            growth = 0.0
-                                        )
-
-                                        stockList.add(stockData)
-                                    }
-
-                                    if (minute >= 1) {
-                                        minute -= 1
-                                    } else if (minute == 0) {
-                                        minute = 59
-                                        hour -= 1
-                                    }
-                                }
-                            }
-                        }
-                    }
+                        stockList = getDataFromResponse(apiParams,response)
 //                }
 //            })
 
         return@withContext stockList
+    }
+
+    private fun getDataFromResponse(apiParams: StockApiCallParams, response: Response): ArrayList<StockData> {
+        val stockList = ArrayList<StockData>()
+
+        val body = response.body!!.string()
+        val jsonResponse = JSONObject(body)
+        Log.d("API body response", body)
+
+        if (jsonResponse.has("Meta Data")) {
+            val metaData = jsonResponse.getJSONObject("Meta Data")
+
+            val lastRefreshed = metaData.get("3. Last Refreshed").toString()
+            val timeInterval = metaData.get("4. Interval").toString()
+
+            if (jsonResponse.has("Time Series ($timeInterval)")) {
+                val data = jsonResponse.getJSONObject("Time Series ($timeInterval)")
+                val date = DateFormatter.getDate(lastRefreshed)
+                val time = DateFormatter.getTime(date, lastRefreshed)
+                var hour = DateFormatter.getHour(time)
+                var minute = DateFormatter.getMinute(time, timeInterval)
+                Log.d("DATE", DateFormatter.getDate(lastRefreshed))
+                Log.d("TIME", DateFormatter.getTime(date, lastRefreshed))
+
+                var timeStampAvailable = true
+                while (timeStampAvailable) {
+
+                    val formattedTimestamp = getFormattedTimeStamp(minute, hour, date)
+                    Log.d("TIME_STAMP", formattedTimestamp)
+
+                    timeStampAvailable = data.has(formattedTimestamp)
+                    if (timeStampAvailable) {
+                        data.getJSONObject(formattedTimestamp).apply {
+
+                            var min = ""
+                            min = if (minute == 0) {
+                                "00"
+                            } else {
+                                minute.toString()
+                            }
+
+                            val stockData = StockData(
+                                stockName = apiParams.stockName,
+                                time = "$hour:$min",
+                                open = getString("1. open").toDouble(),
+                                high = getString("2. high").toDouble(),
+                                low = getString("3. low").toDouble(),
+                                close = getString("4. close").toDouble(),
+                                volume = getString("5. volume").toDouble(),
+                                growth = 0.0
+                            )
+
+                            stockList.add(stockData)
+                        }
+
+                        if (minute >= 1) {
+                            minute -= 1
+                        } else if (minute == 0) {
+                            minute = 59
+                            hour -= 1
+                        }
+                    }
+                }
+            }
+        }
+        return stockList
     }
 
     fun isDataAvailable(params: StockApiCallParams): Boolean {

@@ -1,6 +1,7 @@
 package jasper.wagner.smartstockmarketing.util
 
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 object SerializeHelper {
 
@@ -15,4 +16,16 @@ object SerializeHelper {
         val gson = Gson()
         return gson.fromJson(jsonString, T::class.java)
     }
+
+//    inline fun <reified T> deserializeToArrayList(jsonString: String): ArrayList<T> {
+//        val gson = Gson()
+//        return gson.fromJson(jsonString, Array<T>::class.java).asList() as ArrayList<T>
+//    }
+
+    inline fun <reified T> deserializeToArrayList(jsonString: String): ArrayList<T> {
+        val gson = Gson()
+        return gson.fromJson(jsonString, object : TypeToken<List<T>>() {}.type) as ArrayList<T>
+    }
+
+
 }

@@ -24,6 +24,8 @@ import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.API_CALL_PA
 import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.GROWTH_MARGIN
 import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.PERIODIC_WORK_TAG
 import jasper.wagner.smartstockmarketing.util.SerializeHelper
+import jasper.wagner.smartstockmarketing.util.SharedPrefs
+import jasper.wagner.smartstockmarketing.util.SharedPrefs.saveToSharedPrefs
 import kotlinx.android.synthetic.main.main_fragment.*
 import kotlinx.coroutines.*
 import java.io.Serializable
@@ -91,16 +93,15 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         CoroutineScope(Dispatchers.IO).launch {
             val usStockMarketApi = USStockMarketApi()
             nameList.clear()
-            val stockName = "IBM"
             nameList.add("IBM")
-            nameList.add("BAC")
+//            nameList.add("BAC")
 //            nameList.add("BABA")
 //            nameList.add("GOLD")
 //            nameList.add("BIDU")
 //            nameList.add("BLDP")
 //            nameList.add("BHC")
 //            nameList.add("BK")
-            //            nameList.add("BAYRY")    //not working
+//                        nameList.add("BAYRY")    //not working
 
 
             for (name in nameList) {
@@ -117,19 +118,15 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
                     var growth = 0.0
 
                     var stockDataList = ArrayList<StockData>()
-                    val job = async {
+
                         stockDataList = usStockMarketApi.fetchStockMarketData(apiParams)
+                        saveToSharedPrefs(requireActivity().applicationContext,stockDataList)
                         growth = getStockGrowthRate(stockDataList)
                         schedulePeriodicStockAnalyzes(apiParams, 0.01, itemList.size+1)
-                    }
-                    job.await()
+
 
                     withContext(Dispatchers.Main) {
-                        addToList(
-                            stockDataList.last()
-                                .copy(growth = growth)
-                        )
-
+                        addToList(stockDataList.last().copy(growth = growth))
                     }
                 }
             }
@@ -214,15 +211,19 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
     }
 
     override fun onItemClick(item: StockData, position: Int) {
-        val name = item.stockName
-        val apiParams = StockApiCallParams(
-        name,
-        Common.Function.intraDay,
-        Common.Interval.min1,
-        Common.OutputSize.compact
-        )
+//        val name = item.stockName
+//        val apiParams = StockApiCallParams(
+//        name,
+//        Common.Function.intraDay,
+//        Common.Interval.min1,
+//        Common.OutputSize.compact
+//        )
+//        val bundle = Bundle().apply {
+//            putSerializable("API_PARAMS",apiParams as Serializable)
+//        }
+
         val bundle = Bundle().apply {
-            putSerializable("API_PARAMS",apiParams as Serializable)
+            putString("STOCK_NAME",item.stockName)
         }
 
         val stockInfoFragment = StockInfoFragment.newInstance()
