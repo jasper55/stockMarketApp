@@ -9,13 +9,12 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import jasper.wagner.cryptotracking.common.MathOperation
 import jasper.wagner.smartstockmarketing.R
-import jasper.wagner.smartstockmarketing.domain.model.StockData
-import kotlinx.android.synthetic.main.stock_data_item.*
+import jasper.wagner.smartstockmarketing.domain.model.StockItem
 import kotlinx.android.synthetic.main.stock_data_item.view.*
 import kotlinx.android.synthetic.main.stock_data_item.view.stock_development_last_hour
 
 class StockItemAdapter(private val listItemClickListener: ListItemClickListener)
-    : ListAdapter<StockData, RecyclerView.ViewHolder>(ListItemCallback()) {
+    : ListAdapter<StockItem, RecyclerView.ViewHolder>(ListItemCallback()) {
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = getItem(position)
@@ -38,16 +37,16 @@ inner class StockDataViewHolder(itemView: View) : RecyclerView.ViewHolder(itemVi
     var stockVolume = itemView.volume
     var stockGrowth = itemView.stock_development_last_hour
 
-    fun bind(item : StockData, position : Int) {
-        stockName.text = item.stockName
+    fun bind(item : StockItem, position : Int) {
+        stockName.text = item.stockSymbol //TODO replace with name
         stockHigh.text = MathOperation.round(item.high).toString()
         stockOpen.text = MathOperation.round(item.open).toString()
         stockLow.text = MathOperation.round(item.low).toString()
         stockClose.text = MathOperation.round(item.close).toString()
         stockVolume.text = MathOperation.round(item.volume).toString()
-        stockGrowth.text = "growth rate: ${MathOperation.round(item.growth)} %"
+        stockGrowth.text = "growth rate: ${MathOperation.round(item.growthLastHour)} %"
 
-        if (item.growth >= 0)
+        if (item.growthLastHour >= 0)
             stockGrowth.setTextColor(Color.GREEN)
         else stockGrowth.setTextColor(Color.RED)
 
@@ -58,15 +57,15 @@ inner class StockDataViewHolder(itemView: View) : RecyclerView.ViewHolder(itemVi
 }
 
 interface ListItemClickListener {
-    fun onItemClick(item : StockData, position : Int)
+    fun onItemClick(item : StockItem, position : Int)
 }
 
-class ListItemCallback : DiffUtil.ItemCallback<StockData>() {
-    override fun areItemsTheSame(oldItem: StockData, newItem: StockData): Boolean {
-        return oldItem.stockName == newItem.stockName
+class ListItemCallback : DiffUtil.ItemCallback<StockItem>() {
+    override fun areItemsTheSame(oldItem: StockItem, newItem: StockItem): Boolean {
+        return oldItem.stockSymbol == newItem.stockSymbol
     }
 
-    override fun areContentsTheSame(oldItem: StockData, newItem: StockData): Boolean {
+    override fun areContentsTheSame(oldItem: StockItem, newItem: StockItem): Boolean {
         return oldItem.open == newItem.open &&
                 oldItem.close == newItem.close &&
                 oldItem.high == newItem.high &&

@@ -2,14 +2,12 @@ package jasper.wagner.smartstockmarketing.util
 
 import android.content.Context
 import androidx.annotation.NonNull
-import androidx.work.Data
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.example.workoutreminder.data.network.USStockMarketApi
-import jasper.wagner.cryptotracking.common.Common.getWorkTag
+import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
-import jasper.wagner.smartstockmarketing.domain.model.StockData
+import jasper.wagner.smartstockmarketing.domain.model.StockValues
 import jasper.wagner.smartstockmarketing.util.NotificationBuilder.Companion.NOTIFICATION_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -31,11 +29,11 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
 
         val usStockMarketApi = USStockMarketApi()
         CoroutineScope(IO).launch {
-            val stockList = usStockMarketApi.fetchStockMarketData(apiParams)
+            val stockList = usStockMarketApi.fetchStockMarketData2(apiParams)
 
             val stockGrowthRate = getStockGrowthRate(stockList)
             if (abs(stockGrowthRate) >= growthMargin) {
-                createNotification(context, stockList, stockGrowthRate, channelID)
+                createNotification(context, stockList, apiParams.stockSymbol,stockGrowthRate, channelID)
             }
         }
 
@@ -48,13 +46,14 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
 
     private fun createNotification(
         context: Context,
-        stockList: ArrayList<StockData>,
+        stockList: ArrayList<StockValues>,
+        name: String,
         stockGrowthRate: Double,
         channelID: Int
     ) {
         NotificationBuilder().createNotification(
             context,
-            stockList.last().stockName,
+            name,
             stockGrowthRate,
             channelID
         )

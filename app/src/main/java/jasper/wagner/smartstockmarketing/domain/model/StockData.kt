@@ -1,15 +1,13 @@
 package jasper.wagner.smartstockmarketing.domain.model
 
-import com.google.gson.annotations.SerializedName
-import java.io.Serializable
+import androidx.room.Embedded
+import androidx.room.Relation
 
 data class StockData(
-    @SerializedName("stockName") val stockName: String,
-    @SerializedName("time") val time: String,
-    @SerializedName("1. open") val open: Double,
-    @SerializedName("2. high") val high: Double,
-    @SerializedName("3. low") val low: Double,
-    @SerializedName("4. close") val close: Double,
-    @SerializedName("5. volume") val volume: Double,
-val growth: Double
-): Serializable
+    @Embedded val stock: Stock,
+    @Relation(
+        parentColumn = "stockUID",
+        entityColumn = "stockDataId"
+    )
+    val stockDataList: ArrayList<StockItem>
+)

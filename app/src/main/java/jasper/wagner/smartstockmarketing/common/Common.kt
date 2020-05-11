@@ -67,7 +67,7 @@ object Common{
     }
 
     fun getWorkTag(apiCallParams: StockApiCallParams): String {
-        return "${PERIODIC_WORK_TAG}_${apiCallParams.stockName.toUpperCase()}"
+        return "${PERIODIC_WORK_TAG}_${apiCallParams.stockSymbol.toUpperCase()}"
     }
 
 }

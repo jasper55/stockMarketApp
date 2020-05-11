@@ -8,28 +8,26 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.room.Room
 import androidx.work.*
-import com.example.workoutreminder.data.network.USStockMarketApi
+import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.cryptotracking.common.Common
 import jasper.wagner.cryptotracking.common.Common.getWorkTag
-import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
+import jasper.wagner.smartstockmarketing.common.Constants
+import jasper.wagner.smartstockmarketing.data.db.StockDatabase
 import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
-import jasper.wagner.smartstockmarketing.domain.model.StockData
+import jasper.wagner.smartstockmarketing.domain.model.StockItem
 import jasper.wagner.smartstockmarketing.ui.adapter.StockItemAdapter
 import jasper.wagner.smartstockmarketing.ui.stockinfo.StockInfoFragment
 import jasper.wagner.smartstockmarketing.util.NotificationBuilder.Companion.NOTIFICATION_ID
 import jasper.wagner.smartstockmarketing.util.NotifyWorker
 import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.API_CALL_PARAMS
 import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.GROWTH_MARGIN
-import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.PERIODIC_WORK_TAG
 import jasper.wagner.smartstockmarketing.util.SerializeHelper
-import jasper.wagner.smartstockmarketing.util.SharedPrefs
-import jasper.wagner.smartstockmarketing.util.SharedPrefs.saveToSharedPrefs
 import kotlinx.android.synthetic.main.main_fragment.*
 import kotlinx.coroutines.*
 import java.io.Serializable
-import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
@@ -38,7 +36,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
     private lateinit var binding: MainFragmentBinding
 
-    private val itemList = ArrayList<StockData>()
+    private val itemList = ArrayList<StockItem>()
     private val nameList = ArrayList<String>()
     private lateinit var apiParams: StockApiCallParams
     private lateinit var itemAdapter : StockItemAdapter
@@ -113,22 +111,17 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
                 )
 
 
-                withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.VISIBLE
                     var growth = 0.0
 
-                    var stockDataList = ArrayList<StockData>()
 
-                        stockDataList = usStockMarketApi.fetchStockMarketData(apiParams)
-                        saveToSharedPrefs(requireActivity().applicationContext,stockDataList)
-                        growth = getStockGrowthRate(stockDataList)
+                        val stockItem = usStockMarketApi.fetchStockMarketData(apiParams)
                         schedulePeriodicStockAnalyzes(apiParams, 0.01, itemList.size+1)
 
 
                     withContext(Dispatchers.Main) {
-                        addToList(stockDataList.last().copy(growth = growth))
+                        addToList(stockItem)
                     }
-                }
             }
 
             withContext(Dispatchers.Main) {
@@ -161,8 +154,8 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
     }
 
-    private fun addToList(stockData: StockData){
-        itemList.add(stockData)
+    private fun addToList(stockItem: StockItem){
+        itemList.add(stockItem)
 //        (0..Random().nextInt(100)).mapTo(itemList) { stockData }
     }
 
@@ -205,26 +198,33 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
     }
 
+    private fun initDb(){
+        val db = Room.databaseBuilder(
+            requireContext().applicationContext,
+            StockDatabase::class.java, Constants.stockDbName
+        ).build()
+    }
+
     companion object {
         fun newInstance() = MainFragment()
         const val MAIN_FRAG_TAG = "MainFragment"
     }
 
-    override fun onItemClick(item: StockData, position: Int) {
-//        val name = item.stockName
-//        val apiParams = StockApiCallParams(
-//        name,
-//        Common.Function.intraDay,
-//        Common.Interval.min1,
-//        Common.OutputSize.compact
-//        )
-//        val bundle = Bundle().apply {
-//            putSerializable("API_PARAMS",apiParams as Serializable)
-//        }
-
+    override fun onItemClick(item: StockItem, position: Int) {
+        val name = item.stockSymbol
+        val apiParams = StockApiCallParams(
+        name,
+        Common.Function.intraDay,
+        Common.Interval.min1,
+        Common.OutputSize.compact
+        )
         val bundle = Bundle().apply {
-            putString("STOCK_NAME",item.stockName)
+            putSerializable("API_PARAMS",apiParams as Serializable)
         }
+
+//        val bundle = Bundle().apply {
+//            putString("STOCK_NAME",item.stockName)
+//        }
 
         val stockInfoFragment = StockInfoFragment.newInstance()
         stockInfoFragment.arguments = bundle

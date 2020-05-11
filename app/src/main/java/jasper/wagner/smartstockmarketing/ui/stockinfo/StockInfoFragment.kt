@@ -7,16 +7,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
-import com.example.workoutreminder.data.network.USStockMarketApi
-import jasper.wagner.smartstockmarketing.common.StockOperations
+import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.smartstockmarketing.databinding.StockInfoFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
-import jasper.wagner.smartstockmarketing.domain.model.StockData
-import jasper.wagner.smartstockmarketing.util.SharedPrefs
+import jasper.wagner.smartstockmarketing.domain.model.StockItem
+import jasper.wagner.smartstockmarketing.domain.model.StockValues
 import kotlinx.android.synthetic.main.stock_data_item.stock_development_last_hour
 import kotlinx.android.synthetic.main.stock_info_fragment.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import lecho.lib.hellocharts.model.*
@@ -39,12 +39,16 @@ class StockInfoFragment : Fragment() {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(StockInfoViewModel::class.java)
 
-//        val apiParams = arguments?.getSerializable("API_PARAMS") as StockApiCallParams
-        val stockName = arguments?.getString("STOCK_NAME")
-        val stockList = SharedPrefs.getStockDataFromPrefs(requireContext().applicationContext,stockName!!)
+        val apiParams = arguments?.getSerializable("API_PARAMS") as StockApiCallParams
+//        val stockName = arguments?.getString("STOCK_NAME")
+//        val stockList = SharedPrefs.getStockDataFromPrefs(requireContext().applicationContext,stockName!!)
 
-//        loadData(apiParams)
-        showData(stockList)
+        loadData(apiParams)
+        CoroutineScope(Dispatchers.IO).launch {
+            val usStockMarketApi = USStockMarketApi()
+            val stockList = usStockMarketApi.fetchStockMarketData2(apiParams)
+            showLineChart(stockList)
+        }
     }
 
     override fun onDestroy() {
@@ -59,47 +63,33 @@ class StockInfoFragment : Fragment() {
                 binding.progressBar.visibility = View.VISIBLE
             }
 
-            var stockList = ArrayList<StockData>()
             val usStockMarketApi = USStockMarketApi()
             withContext(Dispatchers.IO) {
-                stockList = usStockMarketApi.fetchStockMarketData(apiParams)
+                val stockItem = usStockMarketApi.fetchStockMarketData(apiParams)
+                showDifferenceToOneHour(stockItem.growthLastHour)
+                updateView(stockItem)
             }
 
             withContext(Dispatchers.Main) {
-                showDifferenceToOneHour(StockOperations.getStockGrowthRate(stockList))
-                showLineChart(stockList)
-                updateView(stockList.last())
-            }
-        }
-    }
-
-    private fun showData(stockList: ArrayList<StockData>) {
-        CoroutineScope(Dispatchers.IO).launch {
-
-            withContext(Dispatchers.Main) {
-                binding.progressBar.visibility = View.VISIBLE
-            }
-
-            withContext(Dispatchers.Main) {
-                showDifferenceToOneHour(StockOperations.getStockGrowthRate(stockList))
-                showLineChart(stockList)
-                updateView(stockList.last())
+//                showLineChart(stockList) //TODO SQl Call
             }
         }
     }
 
 
-    private fun updateView(stockData: StockData) {
+
+
+    private fun updateView(stockValues: StockItem) {
         binding.progressBar.visibility = View.GONE
-        binding.stockName.text = "${stockData.stockName}"
-        binding.open.text = "open: ${stockData.open}"
-        binding.close.text = "close: ${stockData.close}"
-        binding.high.text = "high: ${stockData.high}"
-        binding.low.text = "low: ${stockData.low}"
-        binding.volume.text = "volume: ${stockData.volume}"
+        binding.stockName.text = "${stockValues.stockName}"
+        binding.open.text = "open: ${stockValues.open}"
+        binding.close.text = "close: ${stockValues.close}"
+        binding.high.text = "high: ${stockValues.high}"
+        binding.low.text = "low: ${stockValues.low}"
+        binding.volume.text = "volume: ${stockValues.volume}"
     }
 
-    private fun showDifferenceToOneHour(stockGrowthRate: Double) {
+    private suspend fun showDifferenceToOneHour(stockGrowthRate: Double) = withContext(Main) {
         if (stockGrowthRate >= 0)
             stock_development_last_hour.setTextColor(Color.GREEN)
         else stock_development_last_hour.setTextColor(Color.RED)
@@ -107,7 +97,7 @@ class StockInfoFragment : Fragment() {
         stock_development_last_hour.visibility = View.VISIBLE
     }
 
-    private fun showLineChart(stockList: ArrayList<StockData>) {
+    private suspend fun showLineChart(stockList: ArrayList<StockValues>) = withContext(Main) {
         val yAxisValues = ArrayList<PointValue>()
         val axisValues = ArrayList<AxisValue>()
 
