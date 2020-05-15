@@ -7,7 +7,7 @@ import androidx.work.WorkerParameters
 import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
-import jasper.wagner.smartstockmarketing.domain.model.StockValues
+import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
 import jasper.wagner.smartstockmarketing.util.NotificationBuilder.Companion.NOTIFICATION_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -29,7 +29,7 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
 
         val usStockMarketApi = USStockMarketApi()
         CoroutineScope(IO).launch {
-            val stockList = usStockMarketApi.fetchStockMarketData2(apiParams)
+            val stockList = usStockMarketApi.fetchStockValuesList(apiParams)
 
             val stockGrowthRate = getStockGrowthRate(stockList)
             if (abs(stockGrowthRate) >= growthMargin) {
@@ -46,7 +46,7 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
 
     private fun createNotification(
         context: Context,
-        stockList: ArrayList<StockValues>,
+        stockList: ArrayList<StockTimeSeriesInstance>,
         name: String,
         stockGrowthRate: Double,
         channelID: Int

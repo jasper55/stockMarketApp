@@ -57,10 +57,10 @@ object Common{
         const val min60 = "60min"
     }
 
-    fun createApiLink(function: String, stockName: String, interval: String, outputSize: String): String {
+    fun createApiLink(function: String, stockSymbol: String, interval: String, outputSize: String): String {
         return "https://www.alphavantage.co/query?function="+
                 function +
-                "&symbol=" + stockName +
+                "&symbol=" + stockSymbol +
                 "&interval=" + interval +
                 "&outputsize=" + outputSize +
                 "&apikey=" + API_KEY

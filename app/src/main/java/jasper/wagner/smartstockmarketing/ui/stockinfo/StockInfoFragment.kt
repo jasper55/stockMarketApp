@@ -10,8 +10,8 @@ import androidx.lifecycle.ViewModelProviders
 import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.smartstockmarketing.databinding.StockInfoFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
-import jasper.wagner.smartstockmarketing.domain.model.StockItem
-import jasper.wagner.smartstockmarketing.domain.model.StockValues
+import jasper.wagner.smartstockmarketing.domain.model.StockDisplayItem
+import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
 import kotlinx.android.synthetic.main.stock_data_item.stock_development_last_hour
 import kotlinx.android.synthetic.main.stock_info_fragment.*
 import kotlinx.coroutines.CoroutineScope
@@ -46,7 +46,7 @@ class StockInfoFragment : Fragment() {
         loadData(apiParams)
         CoroutineScope(Dispatchers.IO).launch {
             val usStockMarketApi = USStockMarketApi()
-            val stockList = usStockMarketApi.fetchStockMarketData2(apiParams)
+            val stockList = usStockMarketApi.fetchStockValuesList(apiParams)
             showLineChart(stockList)
         }
     }
@@ -79,7 +79,7 @@ class StockInfoFragment : Fragment() {
 
 
 
-    private fun updateView(stockValues: StockItem) {
+    private fun updateView(stockValues: StockDisplayItem) {
         binding.progressBar.visibility = View.GONE
         binding.stockName.text = "${stockValues.stockName}"
         binding.open.text = "open: ${stockValues.open}"
@@ -97,7 +97,7 @@ class StockInfoFragment : Fragment() {
         stock_development_last_hour.visibility = View.VISIBLE
     }
 
-    private suspend fun showLineChart(stockList: ArrayList<StockValues>) = withContext(Main) {
+    private suspend fun showLineChart(stockList: ArrayList<StockTimeSeriesInstance>) = withContext(Main) {
         val yAxisValues = ArrayList<PointValue>()
         val axisValues = ArrayList<AxisValue>()
 

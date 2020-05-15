@@ -13,11 +13,12 @@ import androidx.work.*
 import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.cryptotracking.common.Common
 import jasper.wagner.cryptotracking.common.Common.getWorkTag
-import jasper.wagner.smartstockmarketing.common.Constants
+import jasper.wagner.smartstockmarketing.common.Constants.DB.STOCK_DB_NAME
+import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
+import jasper.wagner.smartstockmarketing.common.StockOperations.getStockNameFromSymbol
 import jasper.wagner.smartstockmarketing.data.db.StockDatabase
 import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
-import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
-import jasper.wagner.smartstockmarketing.domain.model.StockItem
+import jasper.wagner.smartstockmarketing.domain.model.*
 import jasper.wagner.smartstockmarketing.ui.adapter.StockItemAdapter
 import jasper.wagner.smartstockmarketing.ui.stockinfo.StockInfoFragment
 import jasper.wagner.smartstockmarketing.util.NotificationBuilder.Companion.NOTIFICATION_ID
@@ -36,10 +37,10 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
     private lateinit var binding: MainFragmentBinding
 
-    private val itemList = ArrayList<StockItem>()
+    private val itemList = ArrayList<StockDisplayItem>()
     private val nameList = ArrayList<String>()
     private lateinit var apiParams: StockApiCallParams
-    private lateinit var itemAdapter : StockItemAdapter
+    private lateinit var itemAdapter: StockItemAdapter
 
 //    private val parentJob = Job()
 //    private val coroutineExceptionHandler: CoroutineExceptionHandler =
@@ -57,6 +58,8 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
     private lateinit var viewModel: MainViewModel
 
+    private lateinit var stockDatabase: StockDatabase
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -71,6 +74,9 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
 
+        stockDatabase =
+            StockDatabase.getInstance(requireActivity().applicationContext)
+
 //        stock_list.layoutManager = LinearLayoutManager(context)
 //        stock_list.itemAnimator = DefaultItemAnimator()
 //        stock_list.adapter = itemAdapter
@@ -81,15 +87,13 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         stock_list.adapter = itemAdapter
 
 
-
-
 //        initAddButton(apiParams)
     }
 
     override fun onResume() {
         super.onResume()
         CoroutineScope(Dispatchers.IO).launch {
-            val usStockMarketApi = USStockMarketApi()
+
             nameList.clear()
             nameList.add("IBM")
 //            nameList.add("BAC")
@@ -102,26 +106,82 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 //                        nameList.add("BAYRY")    //not working
 
 
-            for (name in nameList) {
+            /**
+            // 1. get all StockValues
+
+            // 2. show stockdata as item on list
+            // 2.1 get growth from last hour - needed : List<StockValues>
+
+            // 3. get all data for detail view
+            // 3.1 StockItem
+            // 3.2 List<StockValues>
+
+
+            // 4. save data to DB:
+            // 4.1. StockValues
+            // 4.2. StockData(stock, List<StockValues>)
+
+
+            neeed: List<StockValues>, List<StockValues>.last() + growth
+             **/
+
+            for (symbol in nameList) {
+
+                withContext(Dispatchers.Main){
+                    binding.progressBar.visibility = View.VISIBLE
+                }
+
                 apiParams = StockApiCallParams(
-                    name,
+                    symbol,
                     Common.Function.intraDay,
                     Common.Interval.min1,
                     Common.OutputSize.compact
                 )
+                val usStockMarketApi = USStockMarketApi()
+
+                // 1. get StockValues List
+                val stockValuesList = usStockMarketApi.fetchStockValuesList(apiParams)
 
 
-                    binding.progressBar.visibility = View.VISIBLE
-                    var growth = 0.0
+                ///-----------------------
 
+                // 2.
+                val lastValues = stockValuesList.last()
+                val stockItem = StockDisplayItem(
+                    stockName = getStockNameFromSymbol(apiParams.stockSymbol),
+                    stockSymbol = apiParams.stockSymbol,
+                    growthLastHour = getStockGrowthRate(stockValuesList),
+                    open = lastValues.open,
+                    close = lastValues.close,
+                    high = lastValues.high,
+                    low = lastValues.low,
+                    volume = lastValues.volume
+                )
 
-                        val stockItem = usStockMarketApi.fetchStockMarketData(apiParams)
-                        schedulePeriodicStockAnalyzes(apiParams, 0.01, itemList.size+1)
+                withContext(Dispatchers.Main) {
+                    addToItemList(stockItem)
+                }
 
+                ///-----------------------
 
-                    withContext(Dispatchers.Main) {
-                        addToList(stockItem)
-                    }
+                // 3.
+
+                ///-----------------------
+
+                // 4.1
+                val lastTimeStamp = usStockMarketApi.getLastTimeStamp(apiParams)
+                val stock = Stock(
+                    stockSymbol = symbol,
+                    stockName = getStockNameFromSymbol(symbol),
+                    lastTimeStamp = lastTimeStamp
+                )
+                stockDatabase.stockDao().addStock(stock)
+
+                // 4.2
+                stockDatabase.stockValuesDao().addToStockValuesList(stockValuesList)
+
+                // 5. schedule analyzes
+                schedulePeriodicStockAnalyzes(apiParams, 0.01, itemList.size + 1)
             }
 
             withContext(Dispatchers.Main) {
@@ -140,7 +200,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         add_stock.setOnClickListener {
 
             val bundle = Bundle().apply {
-                putSerializable("API_PARAMS",apiParams as Serializable)
+                putSerializable("API_PARAMS", apiParams as Serializable)
             }
 
             val stockInfoFragment = StockInfoFragment.newInstance()
@@ -154,12 +214,11 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
     }
 
-    private fun addToList(stockItem: StockItem){
-        itemList.add(stockItem)
-//        (0..Random().nextInt(100)).mapTo(itemList) { stockData }
+    private fun addToItemList(stockDisplayItem: StockDisplayItem) {
+        itemList.add(stockDisplayItem)
     }
 
-    private fun updateView(){
+    private fun updateView() {
         itemAdapter.submitList(itemList)
     }
 
@@ -198,10 +257,10 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
     }
 
-    private fun initDb(){
+    private fun initDb() {
         val db = Room.databaseBuilder(
             requireContext().applicationContext,
-            StockDatabase::class.java, Constants.stockDbName
+            StockDatabase::class.java, STOCK_DB_NAME
         ).build()
     }
 
@@ -210,16 +269,16 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         const val MAIN_FRAG_TAG = "MainFragment"
     }
 
-    override fun onItemClick(item: StockItem, position: Int) {
+    override fun onItemClick(item: StockDisplayItem, position: Int) {
         val name = item.stockSymbol
         val apiParams = StockApiCallParams(
-        name,
-        Common.Function.intraDay,
-        Common.Interval.min1,
-        Common.OutputSize.compact
+            name,
+            Common.Function.intraDay,
+            Common.Interval.min1,
+            Common.OutputSize.compact
         )
         val bundle = Bundle().apply {
-            putSerializable("API_PARAMS",apiParams as Serializable)
+            putSerializable("API_PARAMS", apiParams as Serializable)
         }
 
 //        val bundle = Bundle().apply {

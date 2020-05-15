@@ -1,12 +1,11 @@
 package jasper.wagner.smartstockmarketing.common
 
-import jasper.wagner.smartstockmarketing.domain.model.StockItem
-import jasper.wagner.smartstockmarketing.domain.model.StockValues
+import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
 import jasper.wagner.smartstockmarketing.util.MathOperation
 
 object StockOperations {
 
-    fun getStockGrowthRate(stockList: List<StockValues>): Double {
+    fun getStockGrowthRate(stockList: List<StockTimeSeriesInstance>): Double {
         val size = stockList.size
         var stockGrowthRate: Double
         if (size >= 60) {

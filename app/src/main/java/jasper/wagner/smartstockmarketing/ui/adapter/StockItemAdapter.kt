@@ -9,12 +9,12 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import jasper.wagner.cryptotracking.common.MathOperation
 import jasper.wagner.smartstockmarketing.R
-import jasper.wagner.smartstockmarketing.domain.model.StockItem
+import jasper.wagner.smartstockmarketing.domain.model.StockDisplayItem
 import kotlinx.android.synthetic.main.stock_data_item.view.*
 import kotlinx.android.synthetic.main.stock_data_item.view.stock_development_last_hour
 
 class StockItemAdapter(private val listItemClickListener: ListItemClickListener)
-    : ListAdapter<StockItem, RecyclerView.ViewHolder>(ListItemCallback()) {
+    : ListAdapter<StockDisplayItem, RecyclerView.ViewHolder>(ListItemCallback()) {
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = getItem(position)
@@ -37,7 +37,7 @@ inner class StockDataViewHolder(itemView: View) : RecyclerView.ViewHolder(itemVi
     var stockVolume = itemView.volume
     var stockGrowth = itemView.stock_development_last_hour
 
-    fun bind(item : StockItem, position : Int) {
+    fun bind(item : StockDisplayItem, position : Int) {
         stockName.text = item.stockSymbol //TODO replace with name
         stockHigh.text = MathOperation.round(item.high).toString()
         stockOpen.text = MathOperation.round(item.open).toString()
@@ -57,15 +57,15 @@ inner class StockDataViewHolder(itemView: View) : RecyclerView.ViewHolder(itemVi
 }
 
 interface ListItemClickListener {
-    fun onItemClick(item : StockItem, position : Int)
+    fun onItemClick(item : StockDisplayItem, position : Int)
 }
 
-class ListItemCallback : DiffUtil.ItemCallback<StockItem>() {
-    override fun areItemsTheSame(oldItem: StockItem, newItem: StockItem): Boolean {
+class ListItemCallback : DiffUtil.ItemCallback<StockDisplayItem>() {
+    override fun areItemsTheSame(oldItem: StockDisplayItem, newItem: StockDisplayItem): Boolean {
         return oldItem.stockSymbol == newItem.stockSymbol
     }
 
-    override fun areContentsTheSame(oldItem: StockItem, newItem: StockItem): Boolean {
+    override fun areContentsTheSame(oldItem: StockDisplayItem, newItem: StockDisplayItem): Boolean {
         return oldItem.open == newItem.open &&
                 oldItem.close == newItem.close &&
                 oldItem.high == newItem.high &&

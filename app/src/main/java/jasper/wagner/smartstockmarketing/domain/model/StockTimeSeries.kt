@@ -3,11 +3,14 @@ package jasper.wagner.smartstockmarketing.domain.model
 import androidx.room.Embedded
 import androidx.room.Relation
 
-data class StockData(
+
+
+
+data class StockTimeSeries(
     @Embedded val stock: Stock,
     @Relation(
         parentColumn = "stockUID",
-        entityColumn = "stockDataId"
+        entityColumn = "stockRelationUID"
     )
-    val stockDataList: ArrayList<StockItem>
+    val stockTimeSeries: List<StockTimeSeriesInstance>
 )

@@ -1,36 +1,36 @@
 package jasper.wagner.smartstockmarketing.data.db
 
 import androidx.room.*
+import jasper.wagner.smartstockmarketing.common.Constants.DB.STOCK_TABLE
+import jasper.wagner.smartstockmarketing.common.Constants.DB.STOCK_VALUES_TABLE
 import jasper.wagner.smartstockmarketing.domain.model.Stock
-import jasper.wagner.smartstockmarketing.domain.model.StockData
-import jasper.wagner.smartstockmarketing.domain.model.StockItem
+import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeries
+import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
 
 @Dao
 interface StockDao {
 
     @Transaction
-    @Query("SELECT * FROM Stock")
-    fun getAllStocks(): ArrayList<StockData>
+    @Query("SELECT * FROM $STOCK_TABLE")
+    fun loadAllStocks(): List<StockTimeSeries>
 
-    @Query("SELECT stockSymbol FROM Stock")
-    fun getStock(stockSymbol: String): ArrayList<StockItem>
-
-    @Insert
-    fun insertStock(stock: Stock)
-
-    @Query("SELECT * FROM stock")
-    fun getAll(): List<Stock>
-
-    @Query("SELECT * FROM stock WHERE stockUID IN (:userIds)")
-    fun loadAllByIds(userIds: IntArray): List<Stock>
-
-    @Query("SELECT * FROM stock WHERE first_name LIKE :first AND " +
-            "last_name LIKE :last LIMIT 1")
-    fun findByName(first: String, last: String): Stock
-
-    @Insert
-    fun insertAll(vararg users: Stock)
+    @Query("SELECT * FROM $STOCK_TABLE WHERE stockUID = :stockUID")
+    fun getStock(stockUID: Int): Stock
 
     @Delete
-    fun delete(user: Stock)
+    fun deleteStock(vararg stock: Stock)
+
+    @Insert
+    fun addStock(vararg stock: Stock)
+
+
+//    @Query("SELECT * FROM $STOCK_VALUES_TABLE WHERE stockUID = :stockUID")
+//    fun getStockValuesForStock(stockUID: Long): List<StockTimeSeriesInstance>
+
+
+//    @Query("SELECT * FROM stock WHERE first_name LIKE :first AND " +
+//            "last_name LIKE :last LIMIT 1")
+//    fun findByName(first: String, last: String): Stock
+
+
 }

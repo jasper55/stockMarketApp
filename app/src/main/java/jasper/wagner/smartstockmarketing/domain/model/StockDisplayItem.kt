@@ -4,7 +4,7 @@ import androidx.room.ColumnInfo
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable
 
-data class StockItem(
+data class StockDisplayItem(
     @SerializedName("stock_name") val stockName: String,
     @SerializedName("stockSymbol") val stockSymbol: String,
     @SerializedName("1. open") val open: Double,
