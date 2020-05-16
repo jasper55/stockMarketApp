@@ -13,11 +13,12 @@ import java.io.Serializable
 data class StockTimeSeriesInstance(
     @PrimaryKey val timeStamp: String,
     @ColumnInfo(name = "stockRelationUID") var stockRelationUID: Long,
+    @ColumnInfo(name = "date") var date: String,
     @ColumnInfo(name = "time") var time: String,
-    @ColumnInfo(name = "1. open") var open: Double,
-    @ColumnInfo(name = "2. high") var high: Double,
-    @ColumnInfo(name = "3. low") var low: Double,
-    @ColumnInfo(name = "4. close") var close: Double,
-    @ColumnInfo(name = "5. volume") var volume: Double
+    @ColumnInfo(name = "open") var open: Double,
+    @ColumnInfo(name = "high") var high: Double,
+    @ColumnInfo(name = "low") var low: Double,
+    @ColumnInfo(name = "close") var close: Double,
+    @ColumnInfo(name = "volume") var volume: Double
 ): Serializable
 

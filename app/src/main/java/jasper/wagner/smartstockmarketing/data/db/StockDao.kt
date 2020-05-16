@@ -12,16 +12,19 @@ interface StockDao {
 
     @Transaction
     @Query("SELECT * FROM $STOCK_TABLE")
-    fun loadAllStocks(): List<StockTimeSeries>
+    fun loadAllStocks(): List<Stock>
 
     @Query("SELECT * FROM $STOCK_TABLE WHERE stockUID = :stockUID")
     fun getStock(stockUID: Int): Stock
 
+    @Query("SELECT * FROM $STOCK_TABLE WHERE stockSymbol = :stockSymbol")
+    fun getStockBySymbol(stockSymbol: String): Stock
+
     @Delete
-    fun deleteStock(vararg stock: Stock)
+    fun deleteStock(stock: Stock)
 
     @Insert
-    fun addStock(vararg stock: Stock)
+    fun addStock(stock: Stock)
 
 
 //    @Query("SELECT * FROM $STOCK_VALUES_TABLE WHERE stockUID = :stockUID")

@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.annotation.NonNull
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import jasper.wagner.smartstockmarketing.common.Constants.WorkManager.API_CALL_PARAMS
+import jasper.wagner.smartstockmarketing.common.Constants.WorkManager.GROWTH_MARGIN
+import jasper.wagner.smartstockmarketing.common.Constants.WorkManager.STOCK_UID
 import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
@@ -23,13 +26,14 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
     @NonNull
     override fun doWork(): Result {
         val paramsString = inputData.getString(API_CALL_PARAMS)
+        val stockUID = inputData.getLong(STOCK_UID,0)
         val growthMargin = inputData.getDouble(GROWTH_MARGIN,1.0)
         val channelID = inputData.getInt(NOTIFICATION_ID,100)
         val apiParams = SerializeHelper.deserializeFromJson(paramsString!!) as StockApiCallParams
 
         val usStockMarketApi = USStockMarketApi()
         CoroutineScope(IO).launch {
-            val stockList = usStockMarketApi.fetchStockValuesList(apiParams)
+            val stockList = usStockMarketApi.fetchStockValuesList(stockUID,apiParams)
 
             val stockGrowthRate = getStockGrowthRate(stockList)
             if (abs(stockGrowthRate) >= growthMargin) {
@@ -57,12 +61,5 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
             stockGrowthRate,
             channelID
         )
-    }
-
-    companion object {
-        const val PERIODIC_WORK_TAG = "periodic stock market analyzer"
-        const val API_CALL_PARAMS = "API call_params"
-        const val STOCK_DATA_AVAILABLE = "Stock data available"
-        const val GROWTH_MARGIN = "growth margin"
     }
 }

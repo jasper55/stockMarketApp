@@ -4,6 +4,7 @@ import android.util.Log
 import jasper.wagner.cryptotracking.common.Common
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockNameFromSymbol
+import jasper.wagner.smartstockmarketing.domain.model.Stock
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockDisplayItem
 import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
@@ -53,13 +54,13 @@ class USStockMarketApi {
         }
     }
 
-    suspend fun fetchStockMarketData(apiParams: StockApiCallParams): StockDisplayItem =
+    suspend fun fetchStockMarketData(stockUID: Long, apiParams: StockApiCallParams): StockDisplayItem =
         withContext(IO) {
 
 
             val response = client.newCall(request)
                 .execute()
-            return@withContext getStockItemFromResponse(apiParams, response)
+            return@withContext getStockItemFromResponse(stockUID,apiParams, response)
         }
 
     suspend fun getLastTimeStamp(apiParams: StockApiCallParams): String =
@@ -93,7 +94,7 @@ class USStockMarketApi {
     }
 
 
-    suspend fun fetchStockValuesList(apiParams: StockApiCallParams): ArrayList<StockTimeSeriesInstance> =
+    suspend fun fetchStockValuesList(stockUID: Long, apiParams: StockApiCallParams): ArrayList<StockTimeSeriesInstance> =
         withContext(IO) {
             initApiCall(apiParams)
 
@@ -105,10 +106,11 @@ class USStockMarketApi {
 //                }
 //
 //                override fun onResponse(call: Call, response: Response) {
-            return@withContext getStockValuesListFromResponse(response)
+            return@withContext getStockValuesListFromResponse(stockUID,response)
         }
 
     private suspend fun getStockValuesListFromResponse(
+        stockUID: Long,
         response: Response
     ): ArrayList<StockTimeSeriesInstance> =
         withContext(IO) {
@@ -152,8 +154,10 @@ class USStockMarketApi {
 
                             data.apply {
                                 val stockValues = StockTimeSeriesInstance(
-                                    stockRelationUID = 0,
-                                    timeStamp = "$date $hour:$min",
+                                    stockRelationUID = stockUID,
+//                                    timeStamp = "$date $hour:$min",
+                                    timeStamp = formattedTimestamp,
+                                    date = date,
                                     time = "$hour:$min",
                                     open = getString("1. open").toDouble(),
                                     high = getString("2. high").toDouble(),
@@ -178,6 +182,7 @@ class USStockMarketApi {
         }
 
     private fun getStockItemFromResponse(
+        stockUID: Long,
         apiParams: StockApiCallParams,
         response: Response
     ): StockDisplayItem {
@@ -222,7 +227,8 @@ class USStockMarketApi {
                         data.apply {
                             val stockValues = StockTimeSeriesInstance(
                                 stockRelationUID = 0,
-                                timeStamp = "$date $hour:$min",
+                                timeStamp = formattedTimestamp,
+                                date = date,
                                 time = "$hour:$min",
                                 open = getString("1. open").toDouble(),
                                 high = getString("2. high").toDouble(),

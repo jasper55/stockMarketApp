@@ -17,6 +17,6 @@ interface StockTimeSeriesInstanceDao {
     fun addStockValues(stockValues: StockTimeSeriesInstance)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun addToStockValuesList(stockValues: List<StockTimeSeriesInstance>)
+    fun addList(stockValues: List<StockTimeSeriesInstance>)
 }
 

@@ -1,7 +1,7 @@
 package jasper.wagner.cryptotracking.common
 
+import jasper.wagner.smartstockmarketing.common.Constants.WorkManager.PERIODIC_WORK_TAG
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
-import jasper.wagner.smartstockmarketing.util.NotifyWorker.Companion.PERIODIC_WORK_TAG
 
 
 object Common{
