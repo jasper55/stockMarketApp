@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import jasper.wagner.smartstockmarketing.common.Constants.Bundle.STOCK_SYMBOL
+import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.data.db.StockDatabase
 import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.smartstockmarketing.databinding.StockInfoFragmentBinding
@@ -44,20 +45,11 @@ class StockInfoFragment : Fragment() {
 
         stockDatabase = StockDatabase.getInstance(requireActivity().applicationContext)
 
-//        val apiParams = arguments?.getSerializable("API_PARAMS") as StockApiCallParams
         val stockSymbol = arguments?.getSerializable(STOCK_SYMBOL) as String
-//        val stockName = arguments?.getString("STOCK_NAME")
-//        val stockList = SharedPrefs.getStockDataFromPrefs(requireContext().applicationContext,stockName!!)
 
         CoroutineScope(Dispatchers.IO).launch {
             loadDataFromDB(stockSymbol)
         }
-//        loadData(apiParams)
-//        CoroutineScope(Dispatchers.IO).launch {
-//            val usStockMarketApi = USStockMarketApi()
-//            val stockList = usStockMarketApi.fetchStockValuesList(apiParams)
-//            showLineChart(stockList)
-//        }
     }
 
     private suspend fun loadDataFromDB(stockSymbol: String) {
@@ -65,21 +57,23 @@ class StockInfoFragment : Fragment() {
         val list = stockDatabase.stockValuesDao().getAllByListStockUID(stock.stockUID!!)
 
         withContext(Dispatchers.Main) {
-            showLineChart(list) //TODO SQl Call
+            showLineChart(list)
+            val growth = getStockGrowthRate(list)
             val stockItem = StockDisplayItem(
                 stockSymbol = stock.stockSymbol,
                 stockName = stock.stockName,
-                close = 10.0,
-                open = 12.3,
-                high = 24.3,
-                low = 4.8,
-                volume = 29301.0,
-                growthLastHour = 1.2
+                close = list.last().close,
+                open = list.last().open,
+                high = list.last().high,
+                low = list.last().low,
+                volume = list.last().volume,
+                growthLastHour = growth
             )
             updateView(stockItem)
+            showDifferenceToOneHour(growth)
         }
     }
-    
+
     private fun updateView(stockValues: StockDisplayItem) {
         binding.progressBar.visibility = View.GONE
         binding.stockName.text = "${stockValues.stockName}"

@@ -97,7 +97,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         CoroutineScope(Dispatchers.IO).launch {
 
             nameList.clear()
-//            nameList.add("IBM")
+            nameList.add("IBM")
 //            nameList.add("BAC")
 //            nameList.add("BABA")
 //            nameList.add("GOLD")
@@ -105,7 +105,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 //            nameList.add("BLDP")
 //            nameList.add("BHC")
 //            nameList.add("BK")
-                        nameList.add("BAYRY")    //not working
+//                        nameList.add("BAYRY")    //not working
 
 
             /**

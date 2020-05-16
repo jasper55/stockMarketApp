@@ -20,4 +20,8 @@ object Constants {
         const val GROWTH_MARGIN = "growth margin"
         const val STOCK_UID = "stockUID"
     }
+
+    object StockDataDisplayOption {
+        const val VOLUME = "volume"
+    }
 }
