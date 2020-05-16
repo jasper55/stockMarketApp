@@ -62,9 +62,7 @@ class StockInfoFragment : Fragment() {
 
     private suspend fun loadDataFromDB(stockSymbol: String) {
         val stock = stockDatabase.stockDao().getStockBySymbol(stockSymbol)
-
-        val list = stockDatabase.stockValuesDao().getAllByListStockUID(stock.stockUID)
-        val list2 = stockDatabase.stockValuesDao().getAll()
+        val list = stockDatabase.stockValuesDao().getAllByListStockUID(stock.stockUID!!)
 
         withContext(Dispatchers.Main) {
             showLineChart(list) //TODO SQl Call
@@ -79,37 +77,9 @@ class StockInfoFragment : Fragment() {
                 growthLastHour = 1.2
             )
             updateView(stockItem)
-
-
         }
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
-
-    private fun loadData(stockUID: Long, apiParams: StockApiCallParams) {
-        CoroutineScope(Dispatchers.IO).launch {
-
-            withContext(Dispatchers.Main) {
-                binding.progressBar.visibility = View.VISIBLE
-            }
-
-            val usStockMarketApi = USStockMarketApi()
-            withContext(Dispatchers.IO) {
-                val stockItem = usStockMarketApi.fetchStockMarketData(stockUID, apiParams)
-                showDifferenceToOneHour(stockItem.growthLastHour)
-                updateView(stockItem)
-            }
-
-            withContext(Dispatchers.Main) {
-//                showLineChart(stockList) //TODO SQl Call
-            }
-        }
-    }
-
-
+    
     private fun updateView(stockValues: StockDisplayItem) {
         binding.progressBar.visibility = View.GONE
         binding.stockName.text = "${stockValues.stockName}"

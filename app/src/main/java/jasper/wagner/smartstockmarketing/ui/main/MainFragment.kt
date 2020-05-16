@@ -97,7 +97,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         CoroutineScope(Dispatchers.IO).launch {
 
             nameList.clear()
-            nameList.add("IBM")
+//            nameList.add("IBM")
 //            nameList.add("BAC")
 //            nameList.add("BABA")
 //            nameList.add("GOLD")
@@ -105,7 +105,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 //            nameList.add("BLDP")
 //            nameList.add("BHC")
 //            nameList.add("BK")
-//                        nameList.add("BAYRY")    //not working
+                        nameList.add("BAYRY")    //not working
 
 
             /**
@@ -129,19 +129,19 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
             for (symbol in nameList) {
 
-                withContext(Dispatchers.Main){
+                withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.VISIBLE
                 }
 
                 withContext(Dispatchers.IO) {
 
-                apiParams = StockApiCallParams(
-                    symbol,
-                    Common.Function.intraDay,
-                    Common.Interval.min1,
-                    Common.OutputSize.compact
-                )
-                val usStockMarketApi = USStockMarketApi()
+                    apiParams = StockApiCallParams(
+                        symbol,
+                        Common.Function.intraDay,
+                        Common.Interval.min1,
+                        Common.OutputSize.compact
+                    )
+                    val usStockMarketApi = USStockMarketApi()
 
 
                     val lastTimeStamp = usStockMarketApi.getLastTimeStamp(apiParams)
@@ -150,8 +150,15 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
                         stockName = getStockNameFromSymbol(symbol),
                         lastTimeStamp = lastTimeStamp
                     )
+                    // 4.1
+                    val symbolList = stockDatabase.stockDao().getStoredStockSymbols()
+                    if (!symbolList.contains(symbol)) {
+                        stockDatabase.stockDao().addStock(stock)
+                    }
+                    val storedStock = stockDatabase.stockDao().getStockBySymbol(symbol)
                     // 1. get StockValues List
-                    val stockValuesList = usStockMarketApi.fetchStockValuesList(stock.stockUID,apiParams)
+                    val stockValuesList =
+                        usStockMarketApi.fetchStockValuesList(storedStock.stockUID!!, apiParams)
 
 
                     ///-----------------------
@@ -177,25 +184,26 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
                         }
 
 
+                        ///-----------------------
+
+                        // 3.
+
+                        ///-----------------------
 
 
-                    ///-----------------------
+                        // 4.2
+                        for (values in stockValuesList) {
+                            values.stockRelationUID = storedStock.stockUID!!
+                            stockDatabase.stockValuesDao().addStockValues(values)
+                        }
 
-                    // 3.
-
-                    ///-----------------------
-
-                    // 4.1
-                    stockDatabase.stockDao().addStock(stock)
-
-                    // 4.2
-                    for (values in stockValuesList){
-                        values.stockRelationUID = stock.stockUID
-                    stockDatabase.stockValuesDao().addStockValues(values)
-                    }
-
-                    // 5. schedule analyzes
-                    schedulePeriodicStockAnalyzes(stock.stockUID,apiParams, 0.01, itemList.size + 1)
+                        // 5. schedule analyzes
+                        schedulePeriodicStockAnalyzes(
+                            storedStock.stockUID!!,
+                            apiParams,
+                            0.01,
+                            itemList.size + 1
+                        )
 
                     } else {
                         withContext(Dispatchers.Main) {
@@ -253,7 +261,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         val data = Data.Builder()
             .putString(API_CALL_PARAMS, paramsString)
             .putDouble(GROWTH_MARGIN, growthMargin)
-            .putLong(STOCK_UID,stockUID)
+            .putLong(STOCK_UID, stockUID)
             .putInt(NOTIFICATION_ID, channelId)
             .build()
 
@@ -298,7 +306,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         )
         val bundle = Bundle().apply {
 //            putSerializable("API_PARAMS", apiParams as Serializable)
-            putString(STOCK_SYMBOL,item.stockSymbol)
+            putString(STOCK_SYMBOL, item.stockSymbol)
         }
 
 //        val bundle = Bundle().apply {
