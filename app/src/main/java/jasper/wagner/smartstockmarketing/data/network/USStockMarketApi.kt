@@ -154,7 +154,7 @@ class USStockMarketApi {
 
                             data.apply {
                                 val stockValues = StockTimeSeriesInstance(
-                                    stockRelationUID = stockUID,
+                                    stock_relation_uid = stockUID,
 //                                    timeStamp = "$date $hour:$min",
                                     timeStamp = formattedTimestamp,
                                     date = date,
@@ -226,7 +226,7 @@ class USStockMarketApi {
 
                         data.apply {
                             val stockValues = StockTimeSeriesInstance(
-                                stockRelationUID = 0,
+                                stock_relation_uid = 0,
                                 timeStamp = formattedTimestamp,
                                 date = date,
                                 time = "$hour:$min",

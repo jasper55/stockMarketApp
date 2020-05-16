@@ -190,7 +190,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
                     // 4.2
                     for (values in stockValuesList){
-                        values.stockRelationUID = stock.stockUID
+                        values.stock_relation_uid = stock.stockUID
                     stockDatabase.stockValuesDao().addStockValues(values)
                     }
 
