@@ -14,5 +14,5 @@ data class Stock(
     @ColumnInfo(name = "lastTimeStamp") var lastTimeStamp: String
 ): Serializable {
     @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(name = "stockUID") var stockUID: Int = 1
+    @ColumnInfo(name = "stockUID") var stockUID: Long = 1
 }

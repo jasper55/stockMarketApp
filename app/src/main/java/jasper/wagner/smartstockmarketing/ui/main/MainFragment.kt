@@ -190,7 +190,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
                     // 4.2
                     for (values in stockValuesList){
-                        values.stock_relation_uid = stock.stockUID
+                        values.stockRelationUID = stock.stockUID
                     stockDatabase.stockValuesDao().addStockValues(values)
                     }
 
@@ -240,7 +240,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
     }
 
     private fun schedulePeriodicStockAnalyzes(
-        stockUID: Int,
+        stockUID: Long,
         apiParams: StockApiCallParams,
         growthMargin: Double,
         channelId: Int
@@ -253,7 +253,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         val data = Data.Builder()
             .putString(API_CALL_PARAMS, paramsString)
             .putDouble(GROWTH_MARGIN, growthMargin)
-            .putInt(STOCK_UID,stockUID)
+            .putLong(STOCK_UID,stockUID)
             .putInt(NOTIFICATION_ID, channelId)
             .build()
 
