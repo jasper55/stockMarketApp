@@ -94,7 +94,7 @@ class USStockMarketApi {
     }
 
 
-    suspend fun fetchStockValuesList(stockUID: Long, apiParams: StockApiCallParams): ArrayList<StockTimeSeriesInstance> =
+    suspend fun fetchStockValuesList(stockUID: Int, apiParams: StockApiCallParams): ArrayList<StockTimeSeriesInstance> =
         withContext(IO) {
             initApiCall(apiParams)
 
@@ -110,7 +110,7 @@ class USStockMarketApi {
         }
 
     private suspend fun getStockValuesListFromResponse(
-        stockUID: Long,
+        stockUID: Int,
         response: Response
     ): ArrayList<StockTimeSeriesInstance> =
         withContext(IO) {

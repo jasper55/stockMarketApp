@@ -29,7 +29,6 @@ class StockInfoFragment : Fragment() {
     private lateinit var viewModel: StockInfoViewModel
     private lateinit var stockDatabase: StockDatabase
 
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -65,6 +64,7 @@ class StockInfoFragment : Fragment() {
         val stock = stockDatabase.stockDao().getStockBySymbol(stockSymbol)
 
         val list = stockDatabase.stockValuesDao().getAllByListStockUID(stock.stockUID)
+        val list2 = stockDatabase.stockValuesDao().getAll()
 
         withContext(Dispatchers.Main) {
             showLineChart(list) //TODO SQl Call

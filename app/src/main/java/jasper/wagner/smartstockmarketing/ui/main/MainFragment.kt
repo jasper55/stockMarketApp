@@ -133,7 +133,6 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
                     binding.progressBar.visibility = View.VISIBLE
                 }
 
-
                 withContext(Dispatchers.IO) {
 
                 apiParams = StockApiCallParams(
@@ -191,6 +190,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
                     // 4.2
                     for (values in stockValuesList){
+                        values.stockRelationUID = stock.stockUID
                     stockDatabase.stockValuesDao().addStockValues(values)
                     }
 
@@ -240,7 +240,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
     }
 
     private fun schedulePeriodicStockAnalyzes(
-        stockUID: Long,
+        stockUID: Int,
         apiParams: StockApiCallParams,
         growthMargin: Double,
         channelId: Int
@@ -253,7 +253,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         val data = Data.Builder()
             .putString(API_CALL_PARAMS, paramsString)
             .putDouble(GROWTH_MARGIN, growthMargin)
-            .putLong(STOCK_UID,stockUID)
+            .putInt(STOCK_UID,stockUID)
             .putInt(NOTIFICATION_ID, channelId)
             .build()
 

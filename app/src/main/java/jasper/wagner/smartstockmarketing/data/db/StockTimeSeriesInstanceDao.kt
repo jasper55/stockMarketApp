@@ -10,8 +10,11 @@ import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
 @Dao
 interface StockTimeSeriesInstanceDao {
 
-    @Query("SELECT * FROM $STOCK_VALUES_TABLE WHERE stockRelationUID = :stockRelationUID")
-    fun getAllByListStockUID(stockRelationUID: Long): List<StockTimeSeriesInstance>
+    @Query("SELECT * FROM $STOCK_VALUES_TABLE WHERE stock_relation_uid = :stockRelationUID")
+    fun getAllByListStockUID(stockRelationUID: Int): List<StockTimeSeriesInstance>
+
+    @Query("SELECT * FROM $STOCK_VALUES_TABLE")
+    fun getAll(): List<StockTimeSeriesInstance>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addStockValues(stockValues: StockTimeSeriesInstance)

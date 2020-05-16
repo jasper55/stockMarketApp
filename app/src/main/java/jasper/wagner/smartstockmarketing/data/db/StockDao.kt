@@ -23,7 +23,7 @@ interface StockDao {
     @Delete
     fun deleteStock(stock: Stock)
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addStock(stock: Stock)
 
 

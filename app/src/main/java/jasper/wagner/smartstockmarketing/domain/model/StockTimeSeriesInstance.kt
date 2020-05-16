@@ -12,7 +12,7 @@ import java.io.Serializable
 @Entity(tableName = STOCK_VALUES_TABLE)
 data class StockTimeSeriesInstance(
     @PrimaryKey val timeStamp: String,
-    @ColumnInfo(name = "stockRelationUID") var stockRelationUID: Long,
+    @ColumnInfo(name = "stock_relation_uid") var stockRelationUID: Int,
     @ColumnInfo(name = "date") var date: String,
     @ColumnInfo(name = "time") var time: String,
     @ColumnInfo(name = "open") var open: Double,
