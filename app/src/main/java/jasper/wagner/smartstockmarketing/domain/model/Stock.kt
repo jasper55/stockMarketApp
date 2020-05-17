@@ -11,7 +11,7 @@ import java.io.Serializable
 data class Stock(
     @ColumnInfo(name = "stockSymbol") var stockSymbol: String,
     @ColumnInfo(name = "stockName") var stockName: String,
-    @ColumnInfo(name = "lastTimeStamp") var lastTimeStamp: String
+    @ColumnInfo(name = "lastTimeStamp") var lastTimeStamp: String?
 ): Serializable {
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "stockUID") var stockUID: Long? = null

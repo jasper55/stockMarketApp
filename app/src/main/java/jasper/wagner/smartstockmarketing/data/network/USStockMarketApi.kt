@@ -62,7 +62,6 @@ class USStockMarketApi {
             val response = client.newCall(request)
                 .execute()
             return@withContext getLastTimeStampFromResponse(response)
-
         }
 
     private fun getLastTimeStampFromResponse(response: Response): String {
@@ -78,8 +77,8 @@ class USStockMarketApi {
         val lastRefreshed = metaData.get("3. Last Refreshed").toString()
         val date = DateFormatter.getDate(lastRefreshed)
         val time = DateFormatter.getTime(date, lastRefreshed)
-        var hour = DateFormatter.getHour(time)
-        var minute = DateFormatter.getMinute(time, timeInterval)
+        val hour = DateFormatter.getHour(time)
+        val minute = DateFormatter.getMinute(time, timeInterval)
 
         return getFormattedTimeStamp(minute, hour, date)
     }
@@ -146,7 +145,6 @@ class USStockMarketApi {
                             data.apply {
                                 val stockValues = StockTimeSeriesInstance(
                                     stockRelationUID = stockUID,
-//                                    timeStamp = "$date $hour:$min",
                                     timeStamp = formattedTimestamp,
                                     date = date,
                                     time = "$hour:$min",

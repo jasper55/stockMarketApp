@@ -29,6 +29,11 @@ interface StockDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addStock(stock: Stock)
 
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    fun updateLastTimeStamp(stock: Stock) {
+
+    }
+
 
 //    @Query("SELECT * FROM $STOCK_VALUES_TABLE WHERE stockUID = :stockUID")
 //    fun getStockValuesForStock(stockUID: Long): List<StockTimeSeriesInstance>
