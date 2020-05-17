@@ -54,15 +54,6 @@ class USStockMarketApi {
         }
     }
 
-    suspend fun fetchStockMarketData(stockUID: Long, apiParams: StockApiCallParams): StockDisplayItem =
-        withContext(IO) {
-
-
-            val response = client.newCall(request)
-                .execute()
-            return@withContext getStockItemFromResponse(stockUID,apiParams, response)
-        }
-
     suspend fun getLastTimeStamp(apiParams: StockApiCallParams): String =
         withContext(IO) {
 
@@ -180,112 +171,5 @@ class USStockMarketApi {
             }
             return@withContext stockValuesList
         }
-
-    private fun getStockItemFromResponse(
-        stockUID: Long,
-        apiParams: StockApiCallParams,
-        response: Response
-    ): StockDisplayItem {
-        val stockValuesList = ArrayList<StockTimeSeriesInstance>()
-
-        val body = response.body!!.string()
-        val jsonResponse = JSONObject(body)
-        Log.d("API body response", body)
-
-        if (jsonResponse.has("Meta Data")) {
-            val metaData = jsonResponse.getJSONObject("Meta Data")
-
-            val lastRefreshed = metaData.get("3. Last Refreshed").toString()
-            val timeInterval = metaData.get("4. Interval").toString()
-
-            if (jsonResponse.has("Time Series ($timeInterval)")) {
-                val data = jsonResponse.getJSONObject("Time Series ($timeInterval)")
-                val date = DateFormatter.getDate(lastRefreshed)
-                val time = DateFormatter.getTime(date, lastRefreshed)
-                var hour = DateFormatter.getHour(time)
-                var minute = DateFormatter.getMinute(time, timeInterval)
-                Log.d("DATE", DateFormatter.getDate(lastRefreshed))
-                Log.d("TIME", DateFormatter.getTime(date, lastRefreshed))
-
-                var timeStampAvailable = true
-                while (timeStampAvailable) {
-
-                    val formattedTimestamp = getFormattedTimeStamp(minute, hour, date)
-                    Log.d("TIME_STAMP", formattedTimestamp)
-
-                    timeStampAvailable = data.has(formattedTimestamp)
-                    if (timeStampAvailable) {
-                        val data = data.getJSONObject(formattedTimestamp)
-
-                        var min = ""
-                        min = if (minute == 0) {
-                            "00"
-                        } else {
-                            minute.toString()
-                        }
-
-                        data.apply {
-                            val stockValues = StockTimeSeriesInstance(
-                                stockRelationUID = stockUID,
-                                timeStamp = formattedTimestamp,
-                                date = date,
-                                time = "$hour:$min",
-                                open = getString("1. open").toDouble(),
-                                high = getString("2. high").toDouble(),
-                                low = getString("3. low").toDouble(),
-                                close = getString("4. close").toDouble(),
-                                volume = getString("5. volume").toDouble()
-                            )
-                            stockValuesList.add(stockValues)
-                        }
-                    }
-
-                    if (minute >= 1) {
-                        minute -= 1
-                    } else if (minute == 0) {
-                        minute = 59
-                        hour -= 1
-                    }
-                }
-
-            }
-        }
-        return createStockItem(stockValuesList, apiParams)
-    }
-
-    private fun createStockItem(
-        stockTimeSeriesInstanceList: ArrayList<StockTimeSeriesInstance>,
-        apiParams: StockApiCallParams
-    ): StockDisplayItem {
-        val growth = getStockGrowthRate(stockTimeSeriesInstanceList)
-        val lastValues = stockTimeSeriesInstanceList.last()
-        val name = getStockNameFromSymbol(apiParams.stockSymbol)
-        return StockDisplayItem(
-            stockSymbol = apiParams.stockSymbol,
-            stockName = name,
-            open = lastValues.open,
-            high = lastValues.high,
-            low = lastValues.low,
-            close = lastValues.close,
-            volume = lastValues.volume,
-            growthLastHour = growth
-        )
-    }
-
-    fun isDataAvailable(params: StockApiCallParams): Boolean {
-        initApiCall(params)
-
-        val response = client.newCall(request)
-            .execute()
-
-        if (response.body != null) {
-            val body = response.body!!.string()
-            val jsonResponse = JSONObject(body)
-            Log.d("API body response", body)
-
-            return jsonResponse.has("Meta Data")
-        } else return false
-    }
-
 
 }

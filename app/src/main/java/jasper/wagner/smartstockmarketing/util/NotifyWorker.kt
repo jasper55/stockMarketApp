@@ -9,6 +9,8 @@ import jasper.wagner.smartstockmarketing.common.Constants.WorkManager.GROWTH_MAR
 import jasper.wagner.smartstockmarketing.common.Constants.WorkManager.STOCK_UID
 import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
+import jasper.wagner.smartstockmarketing.common.StockOperations.getStockNameFromSymbol
+import jasper.wagner.smartstockmarketing.data.db.StockDatabase
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
 import jasper.wagner.smartstockmarketing.util.NotificationBuilder.Companion.NOTIFICATION_ID
@@ -28,16 +30,18 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
         val paramsString = inputData.getString(API_CALL_PARAMS)
         val stockUID = inputData.getLong(STOCK_UID,0)
         val growthMargin = inputData.getDouble(GROWTH_MARGIN,1.0)
-        val channelID = inputData.getInt(NOTIFICATION_ID,100)
+//        val channelID = inputData.getInt(NOTIFICATION_ID,100)
         val apiParams = SerializeHelper.deserializeFromJson(paramsString!!) as StockApiCallParams
 
-        val usStockMarketApi = USStockMarketApi()
         CoroutineScope(IO).launch {
-            val stockList = usStockMarketApi.fetchStockValuesList(stockUID,apiParams)
-
+        val stockList = StockDatabase.getInstance(context).stockValuesDao().getAllByListStockUID(stockUID)
+            val stock = StockDatabase.getInstance(context).stockDao().getStock(stockUID)
             val stockGrowthRate = getStockGrowthRate(stockList)
             if (abs(stockGrowthRate) >= growthMargin) {
-                createNotification(context, stockList, apiParams.stockSymbol,stockGrowthRate, channelID)
+                createNotification(context, stockList,
+                    stockName = getStockNameFromSymbol(stock.stockSymbol),
+                    stockGrowthRate = getStockGrowthRate(stockList),
+                    channelID = stock.stockUID!!)
             }
         }
 
@@ -50,16 +54,16 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
 
     private fun createNotification(
         context: Context,
-        stockList: ArrayList<StockTimeSeriesInstance>,
-        name: String,
+        stockList: List<StockTimeSeriesInstance>,
+        stockName: String,
         stockGrowthRate: Double,
-        channelID: Int
+        channelID: Long
     ) {
         NotificationBuilder().createNotification(
             context,
-            name,
+            stockName,
             stockGrowthRate,
-            channelID
+            channelID.toInt()
         )
     }
 }

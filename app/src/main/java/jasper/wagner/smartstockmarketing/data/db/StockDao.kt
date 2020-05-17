@@ -18,7 +18,7 @@ interface StockDao {
     fun getStoredStockSymbols(): List<String>
 
     @Query("SELECT * FROM $STOCK_TABLE WHERE stockUID = :stockUID")
-    fun getStock(stockUID: Int): Stock
+    fun getStock(stockUID: Long): Stock
 
     @Query("SELECT * FROM $STOCK_TABLE WHERE stockSymbol = :stockSymbol")
     fun getStockBySymbol(stockSymbol: String): Stock
