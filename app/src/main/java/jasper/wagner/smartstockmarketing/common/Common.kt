@@ -66,8 +66,8 @@ object Common{
                 "&apikey=" + API_KEY
     }
 
-    fun getWorkTag(apiCallParams: StockApiCallParams): String {
-        return "${PERIODIC_WORK_TAG}_${apiCallParams.stockSymbol.toUpperCase()}"
+    fun getWorkTag(stockSymbol: String): String {
+        return "${PERIODIC_WORK_TAG}_${stockSymbol.toUpperCase()}"
     }
 
 }

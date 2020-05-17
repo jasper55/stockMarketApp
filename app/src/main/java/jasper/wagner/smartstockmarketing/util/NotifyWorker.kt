@@ -27,11 +27,8 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
 
     @NonNull
     override fun doWork(): Result {
-        val paramsString = inputData.getString(API_CALL_PARAMS)
         val stockUID = inputData.getLong(STOCK_UID,0)
         val growthMargin = inputData.getDouble(GROWTH_MARGIN,1.0)
-//        val channelID = inputData.getInt(NOTIFICATION_ID,100)
-        val apiParams = SerializeHelper.deserializeFromJson(paramsString!!) as StockApiCallParams
 
         CoroutineScope(IO).launch {
         val stockList = StockDatabase.getInstance(context).stockValuesDao().getAllByListStockUID(stockUID)
