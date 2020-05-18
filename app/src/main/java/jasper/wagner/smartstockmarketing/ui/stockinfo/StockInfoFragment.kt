@@ -11,9 +11,7 @@ import androidx.lifecycle.ViewModelProviders
 import jasper.wagner.smartstockmarketing.common.Constants.Bundle.STOCK_SYMBOL
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.data.db.StockDatabase
-import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.smartstockmarketing.databinding.StockInfoFragmentBinding
-import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockDisplayItem
 import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
 import kotlinx.android.synthetic.main.stock_data_item.stock_development_last_hour

@@ -21,6 +21,7 @@ import jasper.wagner.smartstockmarketing.data.db.StockDatabase
 import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.*
 import jasper.wagner.smartstockmarketing.ui.adapter.StockItemAdapter
+import jasper.wagner.smartstockmarketing.ui.search.SearchFragment
 import jasper.wagner.smartstockmarketing.ui.stockinfo.StockInfoFragment
 import jasper.wagner.smartstockmarketing.util.NotifyWorker
 import kotlinx.android.synthetic.main.main_fragment.*
@@ -81,7 +82,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         stock_list.adapter = itemAdapter
 
         usStockMarketApi = USStockMarketApi()
-//        initAddButton(apiParams)
+        initAddButton()
     }
 
     override fun onResume() {
@@ -237,18 +238,18 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 //        parentJob.cancel()
     }
 
-    private fun initAddButton(apiParams: StockApiCallParams) {
+    private fun initAddButton() {
         add_stock.setOnClickListener {
 
-            val bundle = Bundle().apply {
-                putSerializable("API_PARAMS", apiParams as Serializable)
-            }
+//            val bundle = Bundle().apply {
+//                putSerializable("API_PARAMS", apiParams as Serializable)
+//            }
 
-            val stockInfoFragment = StockInfoFragment.newInstance()
-            stockInfoFragment.arguments = bundle
+            val searchFragment = SearchFragment.newInstance()
+//            searchFragment.arguments = bundle
 
             requireActivity().supportFragmentManager.beginTransaction()
-                .replace(jasper.wagner.smartstockmarketing.R.id.container, stockInfoFragment)
+                .replace(jasper.wagner.smartstockmarketing.R.id.container, searchFragment)
                 .addToBackStack(null)
                 .commit()
         }

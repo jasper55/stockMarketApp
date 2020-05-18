@@ -70,4 +70,12 @@ object Common{
         return "${PERIODIC_WORK_TAG}_${stockSymbol.toUpperCase()}"
     }
 
+    fun createApiSearchQuery(keywords: String): String {
+        return "https://www.alphavantage.co/query?function="+
+                "SYMBOL_SEARCH" +
+                "&keywords=" + keywords +
+                "&apikey=" + API_KEY
+
+    }
+
 }
