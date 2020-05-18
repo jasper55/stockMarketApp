@@ -1,6 +1,7 @@
 package jasper.wagner.smartstockmarketing.ui.stockinfo
 
 import android.graphics.Color
+import android.graphics.PointF.length
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -110,7 +111,11 @@ class StockInfoFragment : Fragment() {
             var i = 0
             while (i < size) {
                 axisValues.add(i, AxisValue(i.toFloat()).setLabel(list[i].time))
-                yAxisValues.add(i, PointValue(i.toFloat(), (list[i].close).toFloat()))
+                val low = list[i].low
+                val high = list[i].high
+                val volume = list[i].volume
+                yAxisValues.add(i, PointValue(i.toFloat(), high.toFloat()))
+                yAxisValues.add(i, PointValue(i.toFloat(), low.toFloat()))
                 i += 1
             }
 
@@ -121,6 +126,7 @@ class StockInfoFragment : Fragment() {
             axis.textColor = Color.parseColor("#03A9F4")
             yAxis.textColor = Color.parseColor("#03A9F4")
             yAxis.textSize = 12
+            yAxis.maxLabelChars = length((stockList.last().close).toFloat(),0F).toInt()
 
             val data = LineChartData()
             data.lines = lines

@@ -101,7 +101,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
 
             val symbolList = stockDatabase.stockDao().getStoredStockSymbols()
-            if (!symbolList.contains(nameList[0]) ) {
+            if (!symbolList.contains(nameList[0])) {
                 val newStock = Stock(
                     nameList[0],
                     getStockNameFromSymbol(nameList[0]),
@@ -143,11 +143,8 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
                                 0.01
                             )
 
-                            withContext(Dispatchers.Main) {
-                                binding.progressBar.visibility = View.GONE
-                                addToItemList(stockItem)
-                                updateView()
-                            }
+
+                            displayItemOnList(stockItem)
 
                         } else {
                             withContext(Dispatchers.Main) {
@@ -160,6 +157,14 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
                     loadDataFromDb(storedStock)
                 }
             }
+        }
+    }
+
+    private suspend fun displayItemOnList(stockItem: StockDisplayItem) {
+        withContext(Dispatchers.Main) {
+            binding.progressBar.visibility = View.GONE
+            addToItemList(stockItem)
+            updateView()
         }
     }
 
@@ -224,11 +229,7 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
             volume = lastValues.volume
         )
 
-        withContext(Dispatchers.Main) {
-            binding.progressBar.visibility = View.GONE
-            addToItemList(stockItem)
-            updateView()
-        }
+        displayItemOnList(stockItem)
     }
 
     override fun onDestroy() {
