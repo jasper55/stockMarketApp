@@ -26,7 +26,6 @@ import jasper.wagner.smartstockmarketing.ui.stockinfo.StockInfoFragment
 import jasper.wagner.smartstockmarketing.util.NotifyWorker
 import kotlinx.android.synthetic.main.main_fragment.*
 import kotlinx.coroutines.*
-import java.io.Serializable
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
@@ -89,8 +88,8 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         super.onResume()
         CoroutineScope(Dispatchers.IO).launch {
 
-            nameList.clear()
-            nameList.add("IBM")
+//            nameList.clear()
+//            nameList.add("IBM")
 //            nameList.add("BAC")
 //            nameList.add("BABA")
 //            nameList.add("GOLD")
@@ -100,62 +99,48 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 //            nameList.add("BK")
 //                        nameList.add("BAYRY")    //not working
 
-
-            val symbolList = stockDatabase.stockDao().getStoredStockSymbols()
-            if (!symbolList.contains(nameList[0])) {
-                val newStock = Stock(
-                    nameList[0],
-                    getStockNameFromSymbol(nameList[0]),
-                    null
-                )
-                stockDatabase.stockDao().addStock(newStock)
+            withContext(Dispatchers.Main) {
+                binding.progressBar.visibility = View.VISIBLE
             }
 
-            for (symbol in symbolList) {
-                apiParams = StockApiCallParams(
-                    symbol,
-                    function = Common.Function.intraDay,
-                    interval = Common.Interval.min1,
-                    outputSize = Common.OutputSize.compact
-                )
-                val lastTimeStamp = usStockMarketApi.getLastTimeStamp(apiParams)
 
-                withContext(Dispatchers.Main) {
-                    binding.progressBar.visibility = View.VISIBLE
-                }
-                val storedStock = stockDatabase.stockDao().getStockBySymbol(symbol)
-                if (storedStock.lastTimeStamp != lastTimeStamp) {
+            withContext(Dispatchers.IO) {
+                val stockList = stockDatabase.stockDao().loadAllStocks()
 
+                if (stockList.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        binding.progressBar.visibility = View.GONE
+                    }
+                    return@withContext
+                } else {
                     withContext(Dispatchers.IO) {
-
-                        val stockValuesList = fetchNewDataFromApi(symbol, storedStock)
-                        if (stockValuesList.isNotEmpty()) {
-
-                            val stockItem = creatStockItemWithlastValues(stockValuesList)
-
-                            // 4.2 stored data to database
-                            storeNewDataToDb(stockValuesList, storedStock)
-                            updateLastTimeStamp(storedStock, lastTimeStamp)
-
-                            // 5. schedule analyzes
-                            schedulePeriodicStockAnalyzes(
-                                storedStock.stockUID!!,
-                                storedStock.stockSymbol,
-                                0.01
+                        for (stock in stockList) {
+                            apiParams = StockApiCallParams(
+                                stock.stockSymbol,
+                                function = Common.Function.intraDay,
+                                interval = Common.Interval.min1,
+                                outputSize = Common.OutputSize.compact
                             )
 
+                            val lastTimeStamp = usStockMarketApi.getLastTimeStamp(apiParams)
 
+                            if (stock.lastTimeStamp == null || stock.lastTimeStamp != lastTimeStamp) {
+                                updateLastTimeStamp(stock, lastTimeStamp)
+                                val newValues = fetchNewDataFromApi(stock)
+                                storeNewDataToDb(newValues, stock)
+                            }
+
+                            val valuesList =
+                                stockDatabase.stockValuesDao()
+                                    .getAllByListStockUID(stock.stockUID!!)
+                            val stockItem = creatStockItemWithlastValues(valuesList, stock)
                             displayItemOnList(stockItem)
 
-                        } else {
-                            withContext(Dispatchers.Main) {
-                                binding.progressBar.visibility = View.GONE
-                            }
+                        }
+                        withContext(Dispatchers.Main) {
+                            binding.progressBar.visibility = View.GONE
                         }
                     }
-                }  // lastTimestamp check
-                else {
-                    loadDataFromDb(storedStock)
                 }
             }
         }
@@ -175,11 +160,14 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
     }
 
-    private fun creatStockItemWithlastValues(stockValuesList: ArrayList<StockTimeSeriesInstance>): StockDisplayItem {
+    private fun creatStockItemWithlastValues(
+        stockValuesList: List<StockTimeSeriesInstance>,
+        stock: Stock
+    ): StockDisplayItem {
         val lastValues = stockValuesList.last()
         return StockDisplayItem(
-            stockName = getStockNameFromSymbol(apiParams.stockSymbol),
-            stockSymbol = apiParams.stockSymbol,
+            stockName = stock.stockName,
+            stockSymbol = stock.stockSymbol,
             growthLastHour = getStockGrowthRate(stockValuesList),
             open = lastValues.open,
             close = lastValues.close,
@@ -190,11 +178,10 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
     }
 
     private suspend fun fetchNewDataFromApi(
-        symbol: String,
         storedStock: Stock
     ): ArrayList<StockTimeSeriesInstance> {
         apiParams = StockApiCallParams(
-            symbol,
+            storedStock.stockSymbol,
             Common.Function.intraDay,
             Common.Interval.min1,
             Common.OutputSize.compact

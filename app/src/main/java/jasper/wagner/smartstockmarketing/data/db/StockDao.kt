@@ -6,6 +6,8 @@ import jasper.wagner.smartstockmarketing.common.Constants.DB.STOCK_VALUES_TABLE
 import jasper.wagner.smartstockmarketing.domain.model.Stock
 import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeries
 import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
+import java.util.jar.Pack200.Packer.KEEP
+import java.util.jar.Pack200.Unpacker.KEEP
 
 @Dao
 interface StockDao {
@@ -26,7 +28,7 @@ interface StockDao {
     @Delete
     fun deleteStock(stock: Stock)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     fun addStock(stock: Stock)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)

@@ -19,8 +19,8 @@ interface StockInfoDao {
 //    @Query("SELECT * FROM $STOCK_TABLE WHERE stockUID = :stockUID")
 //    fun getStock(stockUID: Long): Stock
 //
-//    @Query("SELECT * FROM $STOCK_TABLE WHERE stockSymbol = :stockSymbol")
-//    fun getStockBySymbol(stockSymbol: String): Stock
+    @Query("SELECT * FROM $STOCK_INFO_TABLE WHERE stockName = :stockName")
+    fun getStockInfoForStockName(stockName: String): StockInfo
 //
 //    @Delete
 //    fun deleteStockInfo(stockInfo: StockInfo)

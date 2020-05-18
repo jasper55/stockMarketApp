@@ -9,21 +9,25 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProviders
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
+import jasper.wagner.cryptotracking.common.Common
 import jasper.wagner.smartstockmarketing.R
+import jasper.wagner.smartstockmarketing.data.db.StockDatabase
+import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.smartstockmarketing.databinding.SearchFragmentBinding
-import jasper.wagner.smartstockmarketing.databinding.SearchResultItemBinding
+import jasper.wagner.smartstockmarketing.domain.model.Stock
+import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
+import jasper.wagner.smartstockmarketing.ui.adapter.SearchAdapter
+import jasper.wagner.smartstockmarketing.ui.main.MainFragment
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
-class SearchFragment : Fragment() {
+class SearchFragment : Fragment(), SearchAdapter.ResultItemClickListener {
+
     private lateinit var binding: SearchFragmentBinding
-    private val searchAdapter = SearchAdapter()
+    private lateinit var searchAdapter: SearchAdapter
     private val viewModel: SearchViewModel by viewModels {
         SearchViewModel.Factory(requireActivity().applicationContext,Dispatchers.IO)
     }
@@ -43,6 +47,7 @@ class SearchFragment : Fragment() {
             handleSearchResult(it)
         })
 
+        searchAdapter = SearchAdapter(this)
         binding.searchResult.adapter = searchAdapter
         searchAdapter.submitList(emptyList())
 
@@ -56,7 +61,6 @@ class SearchFragment : Fragment() {
                 viewModel.queryChannel.send(editable.toString())
             }
         }
-
     }
 
     private fun handleSearchResult(it: SearchResult) {
@@ -92,39 +96,36 @@ class SearchFragment : Fragment() {
                     "Unexpected error in SearchRepository!",
                     Toast.LENGTH_SHORT
                 ).show()
-//                finish()
             }
         }
     }
 
-    class SearchAdapter : ListAdapter<String, SearchViewHolder>(DIFF_CALLBACK) {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SearchViewHolder {
-            val layoutInflater = LayoutInflater.from(parent.context)
-            val binding = SearchResultItemBinding.inflate(layoutInflater, parent, false)
-            return SearchViewHolder(binding)
+
+    override fun onItemClick(item: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val db = StockDatabase.getInstance(requireActivity().applicationContext)
+            val stockInfo = db.stockInfoDao().getStockInfoForStockName(item)
+            val stock = Stock(stockInfo.stockSymbol, stockInfo.stockName, null)
+            db.stockDao().addStock(stock)
+
+            val apiParams = StockApiCallParams(
+                stock.stockSymbol,
+                Common.Function.intraDay,
+                Common.Interval.min1,
+                Common.OutputSize.compact
+            )
+            val usStockMarketApi = USStockMarketApi()
+            val valuesList = usStockMarketApi.fetchStockValuesList(stock.stockUID!!, apiParams)
+
+            db.stockValuesDao().addList(valuesList)
         }
 
-        override fun onBindViewHolder(holder: SearchViewHolder, position: Int) {
-            holder.bind(getItem(position))
-        }
-
-        companion object {
-            private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<String>() {
-                override fun areItemsTheSame(oldItem: String, newItem: String): Boolean =
-                    oldItem == newItem
-
-                override fun areContentsTheSame(oldItem: String, newItem: String): Boolean =
-                    oldItem == newItem
-            }
-        }
+        requireActivity().supportFragmentManager.beginTransaction()
+            .replace(R.id.container, MainFragment.newInstance())
+            .addToBackStack(null)
+            .commit()
     }
 
-    class SearchViewHolder(private val binding: SearchResultItemBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-        fun bind(text: String) {
-            binding.resultText.text = text
-        }
-    }
 
     companion object {
         fun newInstance(): SearchFragment {
