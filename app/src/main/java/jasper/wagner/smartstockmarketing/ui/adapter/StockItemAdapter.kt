@@ -14,14 +14,17 @@ import kotlinx.android.synthetic.main.stock_data_item.view.*
 import kotlinx.android.synthetic.main.stock_data_item.view.stock_development_last_hour
 
 class StockItemAdapter(private val listItemClickListener: ListItemClickListener)
-    : ListAdapter<StockDisplayItem, RecyclerView.ViewHolder>(ListItemCallback()) {
+    : ListAdapter<StockDisplayItem, StockItemAdapter.StockDataViewHolder>(ListItemCallback()) {
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: StockDataViewHolder, position: Int) {
         val item = getItem(position)
-        (holder as StockDataViewHolder).bind(item, position)
+        holder.bind(item, position)
+        holder.itemView.setOnClickListener {
+            listItemClickListener.onItemClick(item, position)
+        }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StockDataViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.stock_data_item, parent, false)
         return StockDataViewHolder(view)
     }
@@ -36,23 +39,22 @@ inner class StockDataViewHolder(itemView: View) : RecyclerView.ViewHolder(itemVi
     var stockClose = itemView.close
     var stockVolume = itemView.volume
     var stockGrowth = itemView.stock_development_last_hour
+    var stockLineChartView = itemView.stock_line_chart
 
     fun bind(item : StockDisplayItem, position : Int) {
         stockName.text = item.stockSymbol //TODO replace with name
-        stockHigh.text = MathOperation.round(item.high).toString()
-        stockOpen.text = MathOperation.round(item.open).toString()
-        stockLow.text = MathOperation.round(item.low).toString()
-        stockClose.text = MathOperation.round(item.close).toString()
-        stockVolume.text = MathOperation.round(item.volume).toString()
+        stockHigh.text = "high: " + MathOperation.round(item.high).toString()
+        stockOpen.text = "open: " + MathOperation.round(item.open).toString()
+        stockLow.text = "low: " + MathOperation.round(item.low).toString()
+        stockClose.text = "close: " + MathOperation.round(item.close).toString()
+        stockVolume.text = "volume: " + MathOperation.round(item.volume).toString()
         stockGrowth.text = "growth rate: ${MathOperation.round(item.growthLastHour)} %"
+        stockLineChartView = item.lineChart
 
         if (item.growthLastHour >= 0)
             stockGrowth.setTextColor(Color.GREEN)
         else stockGrowth.setTextColor(Color.RED)
 
-        itemView.setOnClickListener {
-            listItemClickListener.onItemClick(item, position)
-        }
     }
 }
 

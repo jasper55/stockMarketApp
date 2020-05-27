@@ -1,13 +1,13 @@
 package jasper.wagner.smartstockmarketing.ui.stockinfo
 
 import android.graphics.Color
-import android.graphics.PointF.length
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import jasper.wagner.smartstockmarketing.R
 import jasper.wagner.smartstockmarketing.common.Constants.Bundle.STOCK_SYMBOL
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.data.db.StockDatabase
@@ -66,7 +66,8 @@ class StockInfoFragment : Fragment() {
                 high = list.last().high,
                 low = list.last().low,
                 volume = list.last().volume,
-                growthLastHour = growth
+                growthLastHour = growth,
+                lineChart = null
             )
             updateView(stockItem)
             showDifferenceToOneHour(growth)
@@ -93,15 +94,11 @@ class StockInfoFragment : Fragment() {
 
     private suspend fun showLineChart(stockList: List<StockTimeSeriesInstance>) =
         withContext(Main) {
-            val yAxisValues = ArrayList<PointValue>()
+            val yAxisValuesRelativeDiff = ArrayList<PointValue>()
+            val yAxisValuesVolume = ArrayList<PointValue>()
+            val yAxisValuesDiffOpenClose = ArrayList<PointValue>()
+            val yAxisValuesDiffLowHigh = ArrayList<PointValue>()
             val axisValues = ArrayList<AxisValue>()
-
-            val line = Line(yAxisValues).setColor(Color.parseColor("#9C27B0"))
-            line.pointRadius = 0
-            line.strokeWidth = 2
-
-            val lines = ArrayList<Line>()
-            lines.add(line)
 
             val size = stockList.size
             val list = stockList.reversed()
@@ -111,11 +108,34 @@ class StockInfoFragment : Fragment() {
                 axisValues.add(i, AxisValue(i.toFloat()).setLabel(list[i].time))
                 val low = list[i].low
                 val high = list[i].high
+                val open = list[i].open
+                val close = list[i].close
                 val volume = list[i].volume
-                yAxisValues.add(i, PointValue(i.toFloat(), high.toFloat()))
-                yAxisValues.add(i, PointValue(i.toFloat(), low.toFloat()))
+                val data = (high-low)/volume
+//                yAxisValues.add(i, PointValue(i.toFloat(), high.toFloat()))
+//                yAxisValues.add(i, PointValue(i.toFloat(), low.toFloat()))
+                yAxisValuesRelativeDiff.add(i, PointValue(i.toFloat(), data.toFloat()))
+                yAxisValuesDiffOpenClose.add(i, PointValue(i.toFloat(), (open-close).toFloat()))
+                yAxisValuesDiffLowHigh.add(i, PointValue(i.toFloat(), (high-low).toFloat()))
                 i += 1
             }
+
+            val relativeDiffLine = Line(yAxisValuesRelativeDiff).setColor(requireActivity().resources.getColor(R.color.colorPrimary))
+            relativeDiffLine.pointRadius = 0
+            relativeDiffLine.strokeWidth = 2
+
+            val diffOpenClose = Line(yAxisValuesRelativeDiff).setColor(requireActivity().resources.getColor(R.color.colorPrimaryDark))
+            diffOpenClose.pointRadius = 0
+            diffOpenClose.strokeWidth = 2
+
+            val diffLowHigh = Line(yAxisValuesRelativeDiff).setColor(requireActivity().resources.getColor(R.color.colorAccent))
+            diffLowHigh.pointRadius = 0
+            diffLowHigh.strokeWidth = 2
+
+            val lines = ArrayList<Line>()
+            lines.add(relativeDiffLine)
+            lines.add(diffOpenClose)
+            lines.add(diffLowHigh)
 
             val axis = Axis()
             val yAxis = Axis()
@@ -124,7 +144,6 @@ class StockInfoFragment : Fragment() {
             axis.textColor = Color.parseColor("#03A9F4")
             yAxis.textColor = Color.parseColor("#03A9F4")
             yAxis.textSize = 12
-            yAxis.maxLabelChars = length((stockList.last().close).toFloat(),0F).toInt()
 
             val data = LineChartData()
             data.lines = lines
@@ -144,7 +163,7 @@ class StockInfoFragment : Fragment() {
 
     companion object {
         fun newInstance(): StockInfoFragment {
-            return StockInfoFragment();
+            return StockInfoFragment()
         }
     }
 }

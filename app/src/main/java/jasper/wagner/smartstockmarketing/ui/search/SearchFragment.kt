@@ -101,23 +101,27 @@ class SearchFragment : Fragment(), SearchAdapter.ResultItemClickListener {
     }
 
 
-    override fun onItemClick(item: String) {
+    override fun onItemClick(stockName: String) {
         CoroutineScope(Dispatchers.IO).launch {
             val db = StockDatabase.getInstance(requireActivity().applicationContext)
-            val stockInfo = db.stockInfoDao().getStockInfoForStockName(item)
-            val stock = Stock(stockInfo.stockSymbol, stockInfo.stockName, null)
-            db.stockDao().addStock(stock)
 
-            val apiParams = StockApiCallParams(
-                stock.stockSymbol,
-                Common.Function.intraDay,
-                Common.Interval.min1,
-                Common.OutputSize.compact
-            )
-            val usStockMarketApi = USStockMarketApi()
-            val valuesList = usStockMarketApi.fetchStockValuesList(stock.stockUID!!, apiParams)
+            if (!db.stockDao().getStoredStockNames().contains(stockName)) {
+                val stockInfo = db.stockInfoDao().getStockInfoForStockName(stockName)
+                val stockToStore = Stock(stockInfo.stockSymbol, stockInfo.stockName, null)
+                db.stockDao().addStock(stockToStore)
 
-            db.stockValuesDao().addList(valuesList)
+                val apiParams = StockApiCallParams(
+                    stockToStore.stockSymbol,
+                    Common.Function.intraDay,
+                    Common.Interval.min1,
+                    Common.OutputSize.compact
+                )
+                val stock = db.stockDao().getStockBySymbol(stockToStore.stockSymbol)
+                val usStockMarketApi = USStockMarketApi()
+                val valuesList = usStockMarketApi.fetchStockValuesList(stock.stockUID!!, apiParams)
+
+                db.stockValuesDao().addList(valuesList)
+            }
         }
 
         requireActivity().supportFragmentManager.beginTransaction()

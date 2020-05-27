@@ -21,6 +21,7 @@ import jasper.wagner.smartstockmarketing.data.db.StockDatabase
 import jasper.wagner.smartstockmarketing.databinding.MainFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.*
 import jasper.wagner.smartstockmarketing.ui.adapter.StockItemAdapter
+import jasper.wagner.smartstockmarketing.ui.customview.StockLineChartView
 import jasper.wagner.smartstockmarketing.ui.search.SearchFragment
 import jasper.wagner.smartstockmarketing.ui.stockinfo.StockInfoFragment
 import jasper.wagner.smartstockmarketing.util.NotifyWorker
@@ -38,6 +39,8 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
     private val nameList = ArrayList<String>()
     private lateinit var apiParams: StockApiCallParams
     private lateinit var itemAdapter: StockItemAdapter
+    private var updatedStocks = 0
+    private var lastUpdate = 0L
 
 //    private val parentJob = Job()
 //    private val coroutineExceptionHandler: CoroutineExceptionHandler =
@@ -82,64 +85,37 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
         usStockMarketApi = USStockMarketApi()
         initAddButton()
+        initRefreshButton()
     }
+
 
     override fun onResume() {
         super.onResume()
         CoroutineScope(Dispatchers.IO).launch {
 
-//            nameList.clear()
-//            nameList.add("IBM")
-//            nameList.add("BAC")
-//            nameList.add("BABA")
-//            nameList.add("GOLD")
-//            nameList.add("BIDU")
-//            nameList.add("BLDP")
-//            nameList.add("BHC")
-//            nameList.add("BK")
-//                        nameList.add("BAYRY")    //not working
-
-            withContext(Dispatchers.Main) {
-                binding.progressBar.visibility = View.VISIBLE
-            }
-
+            showProgressbar()
+            itemList.clear()
 
             withContext(Dispatchers.IO) {
                 val stockList = stockDatabase.stockDao().loadAllStocks()
 
                 if (stockList.isEmpty()) {
-                    withContext(Dispatchers.Main) {
-                        binding.progressBar.visibility = View.GONE
-                    }
+                    hideProgressbar()
                     return@withContext
                 } else {
                     withContext(Dispatchers.IO) {
                         for (stock in stockList) {
-                            apiParams = StockApiCallParams(
-                                stock.stockSymbol,
-                                function = Common.Function.intraDay,
-                                interval = Common.Interval.min1,
-                                outputSize = Common.OutputSize.compact
-                            )
-
-                            val lastTimeStamp = usStockMarketApi.getLastTimeStamp(apiParams)
-
-                            if (stock.lastTimeStamp == null || stock.lastTimeStamp != lastTimeStamp) {
-                                updateLastTimeStamp(stock, lastTimeStamp)
-                                val newValues = fetchNewDataFromApi(stock)
-                                storeNewDataToDb(newValues, stock)
-                            }
-
                             val valuesList =
                                 stockDatabase.stockValuesDao()
                                     .getAllByListStockUID(stock.stockUID!!)
-                            val stockItem = creatStockItemWithlastValues(valuesList, stock)
-                            displayItemOnList(stockItem)
+                            if (valuesList.isNotEmpty()) {
+//                                stock_name_list.text = (stock_name_list.text).plus()
 
+                                    val stockItem = creatStockItemWithlastValues(valuesList, stock)
+                                    displayItemOnList(stockItem)
+                            }
                         }
-                        withContext(Dispatchers.Main) {
-                            binding.progressBar.visibility = View.GONE
-                        }
+                        hideProgressbar()
                     }
                 }
             }
@@ -160,12 +136,14 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
 
     }
 
-    private fun creatStockItemWithlastValues(
+    private suspend fun creatStockItemWithlastValues(
         stockValuesList: List<StockTimeSeriesInstance>,
         stock: Stock
-    ): StockDisplayItem {
+    ): StockDisplayItem = withContext(Dispatchers.Main) {
         val lastValues = stockValuesList.last()
-        return StockDisplayItem(
+        val stockLineChartView =
+            StockLineChartView(stockValuesList, requireContext()).getLineChart()
+        return@withContext StockDisplayItem(
             stockName = stock.stockName,
             stockSymbol = stock.stockSymbol,
             growthLastHour = getStockGrowthRate(stockValuesList),
@@ -173,7 +151,8 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
             close = lastValues.close,
             high = lastValues.high,
             low = lastValues.low,
-            volume = lastValues.volume
+            volume = lastValues.volume,
+            lineChart = stockLineChartView
         )
     }
 
@@ -186,7 +165,6 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
             Common.Interval.min1,
             Common.OutputSize.compact
         )
-
         return usStockMarketApi.fetchStockValuesList(storedStock.stockUID!!, apiParams)
     }
 
@@ -200,40 +178,10 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         }
     }
 
-    private suspend fun loadDataFromDb(storedStock: Stock) {
-
-        val stockValuesList =
-            stockDatabase.stockValuesDao().getAllByListStockUID(storedStock.stockUID!!)
-
-        val lastValues = stockValuesList.last()
-        val stockItem = StockDisplayItem(
-            stockName = getStockNameFromSymbol(apiParams.stockSymbol),
-            stockSymbol = apiParams.stockSymbol,
-            growthLastHour = getStockGrowthRate(stockValuesList),
-            open = lastValues.open,
-            close = lastValues.close,
-            high = lastValues.high,
-            low = lastValues.low,
-            volume = lastValues.volume
-        )
-
-        displayItemOnList(stockItem)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-//        parentJob.cancel()
-    }
 
     private fun initAddButton() {
         add_stock.setOnClickListener {
-
-//            val bundle = Bundle().apply {
-//                putSerializable("API_PARAMS", apiParams as Serializable)
-//            }
-
             val searchFragment = SearchFragment.newInstance()
-//            searchFragment.arguments = bundle
 
             requireActivity().supportFragmentManager.beginTransaction()
                 .replace(jasper.wagner.smartstockmarketing.R.id.container, searchFragment)
@@ -242,6 +190,64 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
         }
 
     }
+
+    private fun initRefreshButton() {
+        refresh_button.setOnClickListener {
+            updateStockData()
+        }
+    }
+
+    private fun updateStockData() {
+        if ((System.currentTimeMillis() - lastUpdate) <= 1000 * 60) {
+            return
+        } else {
+            CoroutineScope(Dispatchers.IO).launch {
+
+                showProgressbar()
+                val stockList = stockDatabase.stockDao().loadAllStocks()
+
+                if (stockList.isNotEmpty()) {
+                    val size = stockList.size
+                    val startIndex = updatedStocks
+
+                    while (startIndex + 5 >= updatedStocks && updatedStocks <= size) {
+                        val stock = stockList[updatedStocks-1]
+                        apiParams = StockApiCallParams(
+                            stock.stockSymbol,
+                            function = Common.Function.intraDay,
+                            interval = Common.Interval.min1,
+                            outputSize = Common.OutputSize.compact
+                        )
+                        val newValues = fetchNewDataFromApi(stock)
+                        if (newValues.isNotEmpty()) {
+                            storeNewDataToDb(newValues, stock)
+                            updateLastTimeStamp(stock, newValues.last().timeStamp)
+                        }
+                        updatedStocks++
+                    }
+                    if (updatedStocks == size){
+                        updatedStocks = 0
+                    }
+                }
+                hideProgressbar()
+                lastUpdate = System.currentTimeMillis()
+                updateView()
+            }
+        }
+    }
+
+    private suspend fun showProgressbar() {
+        withContext(Dispatchers.Main) {
+            binding.progressBar.visibility = View.VISIBLE
+        }
+    }
+
+    private suspend fun hideProgressbar() {
+        withContext(Dispatchers.Main) {
+            binding.progressBar.visibility = View.GONE
+        }
+    }
+
 
     private fun addToItemList(stockDisplayItem: StockDisplayItem) {
         itemList.add(stockDisplayItem)

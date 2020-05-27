@@ -8,6 +8,7 @@ object Common{
     const val imageUrl = "https://res.cloudinary.com/dxi90ksom/image/upload/"
 
     const val API_KEY = "H5BSS6SMAYI28YJE"
+    const val API_KEY_SEARCH = "57JNBN8QM4MNPHHI"
 
     const val API_URI = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
     const val API_URI_2 = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/?start=%d&limit=10"
@@ -74,7 +75,7 @@ object Common{
         return "https://www.alphavantage.co/query?function="+
                 "SYMBOL_SEARCH" +
                 "&keywords=" + keywords +
-                "&apikey=" + API_KEY
+                "&apikey=" + API_KEY_SEARCH
 
     }
 

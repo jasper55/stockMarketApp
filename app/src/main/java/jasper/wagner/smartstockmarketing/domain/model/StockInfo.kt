@@ -7,7 +7,7 @@ import com.google.gson.annotations.SerializedName
 import jasper.wagner.smartstockmarketing.common.Constants
 import java.io.Serializable
 
-@Entity(tableName = Constants.DB.STOCK_INFO_TABLE)
+@Entity(tableName = Constants.DB.STOCK_SEARCH_RESULT_TABLE)
 data class StockInfo(
     @PrimaryKey
     @SerializedName("1. symbol") val stockSymbol: String,

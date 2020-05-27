@@ -1,9 +1,7 @@
 package jasper.wagner.smartstockmarketing.data.db
 
 import androidx.room.*
-import jasper.wagner.smartstockmarketing.common.Constants.DB.STOCK_INFO_TABLE
-import jasper.wagner.smartstockmarketing.common.Constants.DB.STOCK_TABLE
-import jasper.wagner.smartstockmarketing.domain.model.Stock
+import jasper.wagner.smartstockmarketing.common.Constants.DB.STOCK_SEARCH_RESULT_TABLE
 import jasper.wagner.smartstockmarketing.domain.model.StockInfo
 
 @Dao
@@ -19,7 +17,7 @@ interface StockInfoDao {
 //    @Query("SELECT * FROM $STOCK_TABLE WHERE stockUID = :stockUID")
 //    fun getStock(stockUID: Long): Stock
 //
-    @Query("SELECT * FROM $STOCK_INFO_TABLE WHERE stockName = :stockName")
+    @Query("SELECT * FROM $STOCK_SEARCH_RESULT_TABLE WHERE stockName = :stockName")
     fun getStockInfoForStockName(stockName: String): StockInfo
 //
 //    @Delete

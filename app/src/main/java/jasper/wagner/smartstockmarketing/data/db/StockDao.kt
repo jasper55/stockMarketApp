@@ -19,6 +19,9 @@ interface StockDao {
     @Query("SELECT stockSymbol FROM $STOCK_TABLE")
     fun getStoredStockSymbols(): List<String>
 
+    @Query("SELECT stockName FROM $STOCK_TABLE")
+    fun getStoredStockNames(): List<String>
+
     @Query("SELECT * FROM $STOCK_TABLE WHERE stockUID = :stockUID")
     fun getStock(stockUID: Long): Stock
 
@@ -32,9 +35,12 @@ interface StockDao {
     fun addStock(stock: Stock)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    fun updateLastTimeStamp(stock: Stock) {
+    fun updateLastTimeStamp(stock: Stock)
 
-    }
+    @Query("SELECT stockUID FROM $STOCK_TABLE")
+    fun getStoredStockUIDs(): List<Long>
+
+
 
 
 //    @Query("SELECT * FROM $STOCK_VALUES_TABLE WHERE stockUID = :stockUID")
