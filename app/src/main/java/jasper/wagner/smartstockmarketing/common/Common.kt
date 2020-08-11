@@ -48,6 +48,7 @@ object Common{
 
     object Function {
         const val intraDay = "TIME_SERIES_INTRADAY"
+        const val daily = "TIME_SERIES_DAILY"
     }
 
     object Interval {

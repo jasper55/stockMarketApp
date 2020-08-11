@@ -210,13 +210,13 @@ class MainFragment : Fragment(), StockItemAdapter.ListItemClickListener {
                     val size = stockList.size
                     val startIndex = updatedStocks
 
-                    while (startIndex + 5 >= updatedStocks && updatedStocks <= size) {
-                        val stock = stockList[updatedStocks-1]
+                    while (startIndex + 5 >= updatedStocks && updatedStocks < size) {
+                        val stock = stockList[updatedStocks]
                         apiParams = StockApiCallParams(
                             stock.stockSymbol,
                             function = Common.Function.intraDay,
                             interval = Common.Interval.min1,
-                            outputSize = Common.OutputSize.compact
+                            outputSize = Common.OutputSize.full
                         )
                         val newValues = fetchNewDataFromApi(stock)
                         if (newValues.isNotEmpty()) {

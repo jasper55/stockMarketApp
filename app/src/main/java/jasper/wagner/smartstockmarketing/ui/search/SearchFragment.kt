@@ -101,7 +101,7 @@ class SearchFragment : Fragment(), SearchAdapter.ResultItemClickListener {
     }
 
 
-    override fun onItemClick(stockName: String) {
+    override fun onSearchResultItemClick(stockName: String) {
         CoroutineScope(Dispatchers.IO).launch {
             val db = StockDatabase.getInstance(requireActivity().applicationContext)
 
@@ -114,7 +114,7 @@ class SearchFragment : Fragment(), SearchAdapter.ResultItemClickListener {
                     stockToStore.stockSymbol,
                     Common.Function.intraDay,
                     Common.Interval.min1,
-                    Common.OutputSize.compact
+                    Common.OutputSize.full
                 )
                 val stock = db.stockDao().getStockBySymbol(stockToStore.stockSymbol)
                 val usStockMarketApi = USStockMarketApi()
@@ -122,12 +122,12 @@ class SearchFragment : Fragment(), SearchAdapter.ResultItemClickListener {
 
                 db.stockValuesDao().addList(valuesList)
             }
-        }
 
         requireActivity().supportFragmentManager.beginTransaction()
             .replace(R.id.container, MainFragment.newInstance())
             .addToBackStack(null)
             .commit()
+        }
     }
 
 

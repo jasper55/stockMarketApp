@@ -17,12 +17,12 @@ class SearchAdapter(private val onResultItemClickListener: ResultItemClickListen
     override fun onBindViewHolder(holder: SearchViewHolder, position: Int) {
         holder.bind(getItem(position))
         holder.itemView.setOnClickListener {
-            onResultItemClickListener.onItemClick(getItem(position))
+            onResultItemClickListener.onSearchResultItemClick(getItem(position))
         }
     }
 
     interface ResultItemClickListener {
-        fun onItemClick(item : String)
+        fun onSearchResultItemClick(item : String)
     }
 
     companion object {

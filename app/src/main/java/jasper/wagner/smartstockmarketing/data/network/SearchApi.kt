@@ -36,26 +36,6 @@ class SearchRepository(
         private const val RANDOM_ERROR_THRESHOLD = 0.75
     }
 
-//    suspend fun performSearch2(query: String): List<String> {
-//        return withContext(Dispatchers.IO) {
-//            // This is for creating some random, fake network errors...
-//            if (Random.nextFloat() > RANDOM_ERROR_THRESHOLD) {
-//                println("Random error thrown!")
-//                throw IOException("This is a random network error!")
-//            }
-//            println("Search for $query")
-//            val inputStream = assets.open("words_alpha.txt")
-//            val inputStreamReader = InputStreamReader(inputStream)
-//            val bufferedReader = BufferedReader(inputStreamReader)
-//            bufferedReader.use { reader: BufferedReader ->
-//                reader.lineSequence()
-//                    .filter { it.contains(query, true) }
-//                    .take(maxResult)
-//                    .toList()
-//            }
-//        }
-//    }
-
     override suspend fun performSearch(keywords: String): List<String> =
         withContext(Dispatchers.IO) {
 
@@ -81,8 +61,9 @@ class SearchRepository(
                 object : TypeToken<ArrayList<StockInfo>>() {}.type
             )
         }
+        val items = newItems.distinct()
 
-        for (item in newItems) {
+        for (item in items) {
             resultList.add(item.stockName)
             StockDatabase.getInstance(context).stockInfoDao().addStockInfo(item)
         }

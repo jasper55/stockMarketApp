@@ -4,16 +4,12 @@ import android.content.Context
 import androidx.annotation.NonNull
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import jasper.wagner.smartstockmarketing.common.Constants.WorkManager.API_CALL_PARAMS
 import jasper.wagner.smartstockmarketing.common.Constants.WorkManager.GROWTH_MARGIN
 import jasper.wagner.smartstockmarketing.common.Constants.WorkManager.STOCK_UID
-import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockNameFromSymbol
 import jasper.wagner.smartstockmarketing.data.db.StockDatabase
-import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams
 import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
-import jasper.wagner.smartstockmarketing.util.NotificationBuilder.Companion.NOTIFICATION_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
