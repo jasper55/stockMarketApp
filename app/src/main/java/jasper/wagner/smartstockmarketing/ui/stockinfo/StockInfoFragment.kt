@@ -10,7 +10,7 @@ import androidx.lifecycle.ViewModelProviders
 import jasper.wagner.smartstockmarketing.R
 import jasper.wagner.smartstockmarketing.common.Constants.Bundle.STOCK_SYMBOL
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
-import jasper.wagner.smartstockmarketing.data.db.StockDatabase
+import jasper.wagner.smartstockmarketing.data.local.StockDatabase
 import jasper.wagner.smartstockmarketing.databinding.StockInfoFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.StockDisplayItem
 import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
@@ -53,7 +53,7 @@ class StockInfoFragment : Fragment() {
 
     private suspend fun loadDataFromDB(stockSymbol: String) {
         val stock = stockDatabase.stockDao().getStockBySymbol(stockSymbol)
-        val list = stockDatabase.stockValuesDao().getAllByListStockUID(stock.stockUID!!)
+        val list = stockDatabase.stockValuesDao().getAllByStockUID(stock.stockUID!!)
 
         withContext(Dispatchers.Main) {
             showLineChart(list)

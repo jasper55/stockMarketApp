@@ -1,8 +1,9 @@
-package jasper.wagner.smartstockmarketing.util
+package jasper.wagner.smartstockmarketing.data
 
 import android.content.Context
 import android.content.SharedPreferences
 import jasper.wagner.smartstockmarketing.domain.model.StockDisplayItem
+import jasper.wagner.smartstockmarketing.util.SerializeHelper
 
 object SharedPrefs {
 
@@ -11,7 +12,9 @@ object SharedPrefs {
 
     fun saveToSharedPrefs(context: Context, stockList: ArrayList<StockDisplayItem>){
         val sharedPref: SharedPreferences = context.getSharedPreferences(STOCK_PREFS, PRIVATE_MODE)
-        sharedPref.edit().putString(stockList.last().stockName, SerializeHelper.serializeToJson(stockList))
+        sharedPref.edit().putString(stockList.last().stockName,
+            SerializeHelper.serializeToJson(stockList)
+        )
             .apply()
     }
 

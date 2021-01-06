@@ -1,44 +1,39 @@
-package jasper.wagner.smartstockmarketing.data.db
+package jasper.wagner.smartstockmarketing.data.local
 
 import androidx.room.*
 import jasper.wagner.smartstockmarketing.common.Constants.DB.STOCK_TABLE
-import jasper.wagner.smartstockmarketing.common.Constants.DB.STOCK_VALUES_TABLE
 import jasper.wagner.smartstockmarketing.domain.model.Stock
-import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeries
-import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
-import java.util.jar.Pack200.Packer.KEEP
-import java.util.jar.Pack200.Unpacker.KEEP
 
 @Dao
 interface StockDao {
 
     @Transaction
     @Query("SELECT * FROM $STOCK_TABLE")
-    fun loadAllStocks(): List<Stock>
+    suspend fun loadAllStocks(): List<Stock>
 
     @Query("SELECT stockSymbol FROM $STOCK_TABLE")
-    fun getStoredStockSymbols(): List<String>
+    suspend fun getStoredStockSymbols(): List<String>
 
     @Query("SELECT stockName FROM $STOCK_TABLE")
-    fun getStoredStockNames(): List<String>
+    suspend fun getStoredStockNames(): List<String>
 
     @Query("SELECT * FROM $STOCK_TABLE WHERE stockUID = :stockUID")
-    fun getStock(stockUID: Long): Stock
+    suspend fun getStock(stockUID: Long): Stock
 
     @Query("SELECT * FROM $STOCK_TABLE WHERE stockSymbol = :stockSymbol")
-    fun getStockBySymbol(stockSymbol: String): Stock
+    suspend fun getStockBySymbol(stockSymbol: String): Stock
 
     @Delete
-    fun deleteStock(stock: Stock)
+    suspend fun deleteStock(stock: Stock)
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    fun addStock(stock: Stock)
+    suspend fun addStock(stock: Stock)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    fun updateLastTimeStamp(stock: Stock)
+    suspend fun updateLastTimeStamp(stock: Stock)
 
     @Query("SELECT stockUID FROM $STOCK_TABLE")
-    fun getStoredStockUIDs(): List<Long>
+    suspend  fun getStoredStockUIDs(): List<Long>
 
 
 

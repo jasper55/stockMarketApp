@@ -43,7 +43,7 @@ class StockItemAdapter(private val listItemClickListener: ListItemClickListener)
         var stockLineChartView = itemView.stock_line_chart
 
         fun bind(item: StockDisplayItem, position: Int) {
-            stockName.text = item.stockSymbol //TODO replace with name
+            stockName.text = item.stockName
             stockHigh.text = "high: " + MathOperation.round(item.high).toString()
             stockOpen.text = "open: " + MathOperation.round(item.open).toString()
             stockLow.text = "low: " + MathOperation.round(item.low).toString()
@@ -87,13 +87,21 @@ class StockItemAdapter(private val listItemClickListener: ListItemClickListener)
             override fun areItemsTheSame(
                 oldItem: StockDisplayItem,
                 newItem: StockDisplayItem
-            ): Boolean = oldItem == newItem
+            ): Boolean {
+                return oldItem.stockSymbol == newItem.stockSymbol
+            }
 
 
             override fun areContentsTheSame(
                 oldItem: StockDisplayItem,
                 newItem: StockDisplayItem
-            ): Boolean = oldItem == newItem
+            ): Boolean {
+                return oldItem.open == newItem.open &&
+                        oldItem.close == newItem.close &&
+                        oldItem.high == newItem.high &&
+                        oldItem.low == newItem.low &&
+                        oldItem.volume == newItem.volume
+            }
 
         }
     }

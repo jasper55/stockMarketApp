@@ -1,4 +1,4 @@
-package jasper.wagner.smartstockmarketing.data.db
+package jasper.wagner.smartstockmarketing.data.local
 
 import android.content.Context
 import androidx.room.Database

@@ -12,8 +12,8 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import jasper.wagner.cryptotracking.common.Common
 import jasper.wagner.smartstockmarketing.R
-import jasper.wagner.smartstockmarketing.data.db.StockDatabase
-import jasper.wagner.smartstockmarketing.data.network.USStockMarketApi
+import jasper.wagner.smartstockmarketing.data.local.StockDatabase
+import jasper.wagner.smartstockmarketing.data.remote.USStockMarketApi
 import jasper.wagner.smartstockmarketing.databinding.SearchFragmentBinding
 import jasper.wagner.smartstockmarketing.domain.model.Stock
 import jasper.wagner.smartstockmarketing.domain.model.StockApiCallParams

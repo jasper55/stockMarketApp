@@ -1,12 +1,11 @@
-package jasper.wagner.smartstockmarketing.data.network
+package jasper.wagner.smartstockmarketing.data.remote
 
 import android.content.Context
-import android.content.res.AssetManager
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import jasper.wagner.cryptotracking.common.Common
-import jasper.wagner.smartstockmarketing.data.db.StockDatabase
+import jasper.wagner.smartstockmarketing.data.local.StockDatabase
 import jasper.wagner.smartstockmarketing.domain.model.StockInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,10 +13,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.json.JSONObject
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStreamReader
-import kotlin.random.Random
 
 interface SearchApi {
     suspend fun performSearch(query: String): List<String>
@@ -46,7 +41,7 @@ class SearchRepository(
             return@withContext getSearchResultList(response)
         }
 
-    private fun getSearchResultList(response: Response): List<String> {
+    private suspend fun getSearchResultList(response: Response): List<String> {
         val resultList = ArrayList<String>()
         var newItems = ArrayList<StockInfo>()
 
@@ -63,10 +58,10 @@ class SearchRepository(
         }
         val items = newItems.distinct()
 
-        for (item in items) {
-            resultList.add(item.stockName)
-            StockDatabase.getInstance(context).stockInfoDao().addStockInfo(item)
-        }
+            for (item in items) {
+                resultList.add(item.stockName)
+                StockDatabase.getInstance(context).stockInfoDao().addStockInfo(item)
+            }
         return resultList
     }
 

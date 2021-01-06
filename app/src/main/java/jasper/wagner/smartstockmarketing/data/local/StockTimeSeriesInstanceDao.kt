@@ -1,4 +1,4 @@
-package jasper.wagner.smartstockmarketing.data.db
+package jasper.wagner.smartstockmarketing.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -11,15 +11,15 @@ import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
 interface StockTimeSeriesInstanceDao {
 
     @Query("SELECT * FROM $STOCK_VALUES_TABLE WHERE stockRelationUID = :stockRelationUID")
-    fun getAllByListStockUID(stockRelationUID: Long): List<StockTimeSeriesInstance>
+    suspend fun getAllByStockUID(stockRelationUID: Long): List<StockTimeSeriesInstance>
 
     @Query("SELECT * FROM $STOCK_VALUES_TABLE")
-    fun getAll(): List<StockTimeSeriesInstance>
+    suspend fun getAll(): List<StockTimeSeriesInstance>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun addStockValues(stockValues: StockTimeSeriesInstance)
+    suspend fun addStockValues(stockValues: StockTimeSeriesInstance)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun addList(stockValues: List<StockTimeSeriesInstance>)
+    suspend fun addList(stockValues: List<StockTimeSeriesInstance>)
 }
 

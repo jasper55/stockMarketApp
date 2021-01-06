@@ -1,13 +1,11 @@
 package jasper.wagner.smartstockmarketing.ui.search
 
 import android.content.Context
-import android.content.res.AssetManager
-import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.asLiveData
-import jasper.wagner.smartstockmarketing.data.network.SearchApi
-import jasper.wagner.smartstockmarketing.data.network.SearchRepository
+import jasper.wagner.smartstockmarketing.data.remote.SearchApi
+import jasper.wagner.smartstockmarketing.data.remote.SearchRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel

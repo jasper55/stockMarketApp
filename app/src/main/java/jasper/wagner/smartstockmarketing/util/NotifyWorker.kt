@@ -8,7 +8,7 @@ import jasper.wagner.smartstockmarketing.common.Constants.WorkManager.GROWTH_MAR
 import jasper.wagner.smartstockmarketing.common.Constants.WorkManager.STOCK_UID
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockGrowthRate
 import jasper.wagner.smartstockmarketing.common.StockOperations.getStockNameFromSymbol
-import jasper.wagner.smartstockmarketing.data.db.StockDatabase
+import jasper.wagner.smartstockmarketing.data.local.StockDatabase
 import jasper.wagner.smartstockmarketing.domain.model.StockTimeSeriesInstance
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -27,7 +27,7 @@ class NotifyWorker(@NonNull context: Context, @NonNull params: WorkerParameters)
         val growthMargin = inputData.getDouble(GROWTH_MARGIN,1.0)
 
         CoroutineScope(IO).launch {
-        val stockList = StockDatabase.getInstance(context).stockValuesDao().getAllByListStockUID(stockUID)
+        val stockList = StockDatabase.getInstance(context).stockValuesDao().getAllByStockUID(stockUID)
             val stock = StockDatabase.getInstance(context).stockDao().getStock(stockUID)
             val stockGrowthRate = getStockGrowthRate(stockList)
             if (abs(stockGrowthRate) >= growthMargin) {

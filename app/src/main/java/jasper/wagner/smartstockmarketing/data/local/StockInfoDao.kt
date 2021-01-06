@@ -1,4 +1,4 @@
-package jasper.wagner.smartstockmarketing.data.db
+package jasper.wagner.smartstockmarketing.data.local
 
 import androidx.room.*
 import jasper.wagner.smartstockmarketing.common.Constants.DB.STOCK_SEARCH_RESULT_TABLE
@@ -18,16 +18,16 @@ interface StockInfoDao {
 //    fun getStock(stockUID: Long): Stock
 //
     @Query("SELECT * FROM $STOCK_SEARCH_RESULT_TABLE WHERE stockName = :stockName")
-    fun getStockInfoForStockName(stockName: String): StockInfo
+    suspend fun getStockInfoForStockName(stockName: String): StockInfo
 //
 //    @Delete
 //    fun deleteStockInfo(stockInfo: StockInfo)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun addStockInfo(stockInfo: StockInfo)
+    suspend fun addStockInfo(stockInfo: StockInfo)
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    fun updateStockInfo(stockInfo: StockInfo) {
+    suspend fun updateStockInfo(stockInfo: StockInfo) {
 
     }
 

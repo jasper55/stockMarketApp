@@ -3,7 +3,7 @@ package jasper.wagner.smartstockmarketing.util
 import android.content.Context
 import androidx.room.Room
 import jasper.wagner.smartstockmarketing.common.Constants.DB.STOCK_DB_NAME
-import jasper.wagner.smartstockmarketing.data.db.StockDatabase
+import jasper.wagner.smartstockmarketing.data.local.StockDatabase
 
 open class SingletonHolder<T, A>(creator: (A) -> T) {
     private var creator: ((A) -> T)? = creator
